@@ -1,16 +1,13 @@
 import torch
 import os
-import numpy as np
-import codecs as cs
 from torch.utils.data import Dataset
 from os.path import join as pjoin
 import random
-import pickle
 from typing import Tuple
-from einops import rearrange
+from tqdm import tqdm
 
 from rlbench.demo import Demo
-from rlbench.backend.observation import Observation
+
 from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, keypoint_discovery, interpolate_trajectory
 
 
@@ -40,12 +37,17 @@ class MotionVQVAEDataset(Dataset):
         # load data
         self.data = []
         self.tasks = os.listdir(pjoin(data_dir, split))
+
+        all_demos = []
         for task in self.tasks:
             for var in range(1):  # seems that there is only one variation for each task
                 num_episode = len(os.listdir(pjoin(data_dir, split, task, f"variation{var}", "episodes")))
                 for eps in range(num_episode):
-                    action_traj, descriptions = self.load_obs_traj(task, var, eps, load_observations)
-                    self.data.append((action_traj, descriptions))
+                    all_demos.append((task, var, eps))
+
+        for task, var, eps in tqdm(all_demos, desc=f"Loading {split} data"):
+            action_traj, descriptions = self.load_obs_traj(task, var, eps, load_observations)
+            self.data.append((action_traj, descriptions))
 
     def __len__(self):
         return len(self.data)
