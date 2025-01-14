@@ -10,7 +10,7 @@ from typing import Tuple
 from einops import rearrange
 
 from rlbench.demo import Demo
-
+from rlbench.backend.observation import Observation
 from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, keypoint_discovery, interpolate_trajectory
 
 
@@ -72,7 +72,7 @@ class MotionVQVAEDataset(Dataset):
 
     def load_obs_traj(self, task: str, variation: int, episode: int, load_observations: bool = False):
         # load stored demo
-        demo: Demo = self.env.get_demo(task, variation, episode, image_paths=load_observations)[0]
+        demo: Demo = self.env.get_demo(task, variation, episode, image_paths= not load_observations)[0]
 
         # get keypoints
         key_frame_ids = keypoint_discovery(demo)  # List[int]
