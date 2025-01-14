@@ -42,7 +42,7 @@ class MotionVQVAEDataset(Dataset):
         self.tasks = os.listdir(pjoin(data_dir, split))
         for task in self.tasks:
             for var in range(1):  # seems that there is only one variation for each task
-                num_episode = len(os.listdir(pjoin(data_dir, split, task, "all_variations", "episodes")))
+                num_episode = len(os.listdir(pjoin(data_dir, split, task, f"variation{var}", "episodes")))
                 for eps in range(num_episode):
                     action_traj, descriptions = self.load_obs_traj(task, var, eps, load_observations)
                     self.data.append((action_traj, descriptions))
