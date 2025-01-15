@@ -40,8 +40,12 @@ class MotionVQVAEDataset(Dataset):
 
         all_demos = []
         for task in self.tasks:
-            for var in range(1):  # seems that there is only one variation for each task
-                num_episode = len(os.listdir(pjoin(data_dir, split, task, f"variation{var}", "episodes")))
+            # get all the variations
+            variation_folders = os.listdir(pjoin(data_dir, split, task))
+            variation_folders = [x for x in variation_folders if x.startswith("variation")]
+            for var_folder in variation_folders:
+                var = int(var_folder.replace("variation", ""))
+                num_episode = len(os.listdir(pjoin(data_dir, split, task, var_folder, "episodes")))
                 for eps in range(num_episode):
                     all_demos.append((task, var, eps))
 
