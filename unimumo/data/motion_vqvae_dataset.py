@@ -54,7 +54,7 @@ class MotionVQVAEDataset(Dataset):
         if preload_data:
             for task, var, eps in tqdm(self.all_demos_ids, desc=f"Loading {split} data"):
                 action_traj, descriptions = self.load_obs_traj(task, var, eps, load_observations)
-                self.data.append((action_traj, descriptions))
+                self.data.append((action_traj, descriptions, task, var, eps))
         print(f"{split} data loaded, total number of demos: {len(self.all_demos_ids)}")
 
     def __len__(self):
@@ -62,7 +62,7 @@ class MotionVQVAEDataset(Dataset):
 
     def __getitem__(self, idx):
         if self.preload_data:
-            action_traj, descriptions = self.data[idx]
+            action_traj, descriptions, task, var, eps = self.data[idx]
         else:
             task, var, eps = self.all_demos_ids[idx]
             action_traj, descriptions = self.load_obs_traj(task, var, eps, self.load_observations)
@@ -80,7 +80,10 @@ class MotionVQVAEDataset(Dataset):
 
         return  {
             "trajectory": traj,  # (T, 8)
-            "description": desc  # str
+            "description": desc,  # str
+            "task_str": task,  # str
+            "variation": var,  # int
+            "episode": eps,  # int
         }
 
 

@@ -52,6 +52,10 @@ class VQVae(pl.LightningModule):
         self.mean = torch.from_numpy(np.load(pjoin(mean_std_dir, "mean.npy"))).float()
         self.std = torch.from_numpy(np.load(pjoin(mean_std_dir, "std.npy"))).float()
 
+        # store the last batch for visualization
+        self.last_train_batch = None
+        self.last_val_batch = None
+
     def normalize(self, x: Tensor) -> Tensor:
         return (x - self.mean) / self.std
 
@@ -69,6 +73,8 @@ class VQVae(pl.LightningModule):
         return x
 
     def training_step(self, batch: tp.Dict[str, torch.Tensor], batch_idx: int):
+        self.last_train_batch = batch
+
         trajectory = batch["trajectory"]  # (B, T, 8)
         description = batch["description"]  # (B,)
 
@@ -86,6 +92,8 @@ class VQVae(pl.LightningModule):
         return loss
 
     def validation_step(self, batch: tp.Dict[str, torch.Tensor], batch_idx: int):
+        self.last_val_batch = batch
+
         trajectory = batch["trajectory"]
         description = batch["description"]
 

@@ -1,8 +1,8 @@
 model:
-  base_learning_rate: 2e-4
   target: unimumo.models.motion_vqvae.MotionVQVAE
   params:
     monitor: "val/loss"
+    mean_std_dir: "data/..."
     loss_config:
       target: unimumo.modules.loss.MotionVqVaeLoss
       params:
@@ -36,7 +36,6 @@ model:
           eta_min: 1e-6
 
 
-
 data:
   target: train.DataModuleFromConfig
   params:
@@ -67,18 +66,18 @@ data:
 lightning:
   callbacks:
     video_logger:
-      target: unimumo.loggers.MotionVQVAELogger
+      target: unimumo.loggers_vqvae.TrajectoryLogger
       params:
-        motion_dir: 'data/motion'
-        epoch_frequency: 10
-        batch_frequency: 4000
-        max_video_per_generation: 4
-        max_video_logged: 120
-        motion_fps: 60
-        disabled: False
+        save_video: True
+        num_videos: 3
+        rlb_config:
+          data_path: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+          image_size: "256,256"
+          apply_rgb: True
+          apply_pc: True
 
   trainer:
     benchmark: True
-    devices: 6
-    num_nodes: 8
+    devices: 1
+    num_nodes: 1
     strategy: ddp

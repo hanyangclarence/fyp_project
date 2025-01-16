@@ -126,16 +126,16 @@ def data_collate(batch):
     notnone_batches = [b for b in batch if b is not None]
 
     adapted_batch = {}
-    if all(["text" in b.keys() for b in notnone_batches]):
-        adapted_batch["text"] = [b['text'] for b in notnone_batches]
-    if all(["music_code" in b.keys() for b in notnone_batches]):
-        adapted_batch["music_code"] = torch.stack([b['music_code'] for b in notnone_batches])
-    if all(["motion_code" in b.keys() for b in notnone_batches]):
-        adapted_batch["motion_code"] = torch.stack([b['motion_code'] for b in notnone_batches])
-    if all(["motion" in b.keys() for b in notnone_batches]):
-        adapted_batch["motion"] = torch.stack([b['motion'] for b in notnone_batches])
-    if all(["waveform" in b.keys() for b in notnone_batches]):
-        adapted_batch["waveform"] = torch.stack([b['waveform'] for b in notnone_batches])
+    if all(["trajectory" in b.keys() for b in notnone_batches]):
+        adapted_batch["trajectory"] = torch.stack([b['trajectory'] for b in notnone_batches])
+    if all(["description" in b.keys() for b in notnone_batches]):
+        adapted_batch["description"] = [b['description'] for b in notnone_batches]
+    if all(["task_str" in b.keys() for b in notnone_batches]):
+        adapted_batch["task_str"] = [b['task_str'] for b in notnone_batches]
+    if all(["variation" in b.keys() for b in notnone_batches]):
+        adapted_batch["variation"] = [b['variation'] for b in notnone_batches]
+    if all(["episode" in b.keys() for b in notnone_batches]):
+        adapted_batch["episode"] = [b['episode'] for b in notnone_batches]
 
     return adapted_batch
 
@@ -218,15 +218,6 @@ class SetupCallback(Callback):
     def on_keyboard_interrupt(self, trainer, pl_module):
         if trainer.global_rank == 0:
             print("Summoning checkpoint.")
-            ckpt_path = os.path.join(self.ckptdir, "last.ckpt")
-            trainer.save_checkpoint(ckpt_path)
-
-    def on_validation_end(self, trainer, pl_module):
-        if trainer.global_rank == 0 and trainer.current_epoch % 3 == 0:
-            print('Saving checkpoint on validation end')
-            ckpt_path = os.path.join(self.ckptdir, f"e_{trainer.current_epoch}.ckpt")
-            trainer.save_checkpoint(ckpt_path)
-
             ckpt_path = os.path.join(self.ckptdir, "last.ckpt")
             trainer.save_checkpoint(ckpt_path)
 
@@ -494,7 +485,7 @@ if __name__ == "__main__":
             print(f"{k}, {data.datasets[k].__class__.__name__}, {len(data.datasets[k])}")
 
         # configure learning rate
-        bs, base_lr = config.data.params.batch_size, config.model.base_learning_rate
+        bs, base_lr = config.data.params.batch_size, config.model.params.optimizer_config.optimizer.params.lr
         if not cpu:
             ngpu = gpuinfo
         else:
