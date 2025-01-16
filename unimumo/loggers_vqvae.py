@@ -62,6 +62,18 @@ class TrajectoryLogger(Callback):
             code = pl_module.encode(trajectory)
             trajectory_recon = pl_module.decode(code)
 
+        # initialize env
+        self.env = RLBenchEnv(
+            data_path=pjoin(self.rlb_config["data_path"], "val"),
+            image_size=[int(x) for x in self.rlb_config["image_size"].split(",")],
+            apply_rgb=self.rlb_config["apply_rgb"],
+            apply_pc=self.rlb_config["apply_pc"],
+            headless=True,
+            apply_cameras=("left_shoulder", "right_shoulder", "wrist", "front"),
+            collision_checking=False
+        )
+        self.env.env.launch()
+
         for b in range(min(len(description), self.num_videos)):
             task_str = task_strs[b]
             var = variations[b]
@@ -71,18 +83,6 @@ class TrajectoryLogger(Callback):
             recon_traj = trajectory_recon[b].cpu().numpy()
             desc = description[b]
 
-            # initialize env
-            self.env = RLBenchEnv(
-                data_path=pjoin(self.rlb_config["data_path"], split),
-                image_size=self.rlb_config["image_size"],
-                apply_rgb=self.rlb_config["apply_rgb"],
-                apply_pc=self.rlb_config["apply_pc"],
-                headless=True,
-                apply_cameras=("left_shoulder", "right_shoulder", "wrist", "front"),
-                collision_checking=False
-            )
-
-            self.env.env.launch()
             task = self.env.env.get_task(task_str)
             task.set_variation(var)
 
@@ -112,9 +112,9 @@ class TrajectoryLogger(Callback):
             self.run_single_trajectory(recon_traj, task, task_str, var, eps)
             tr.save(pjoin(save_dir, f"e{pl_module.current_epoch}_b{b}_var{var}_eps{eps}_recon.mp4"))
 
-            # clean up
-            self.env.env.shutdown()
-            self.env = None
+        # clean up
+        self.env.env.shutdown()
+        self.env = None
 
         if is_training:
             pl_module.train()
