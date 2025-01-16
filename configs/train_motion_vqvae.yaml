@@ -48,6 +48,7 @@ data:
       params:
         split: "train"
         data_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+        preload_data: False
         load_observations: False
         chunk_size: 4
         n_chunk_per_traj: 2
@@ -57,6 +58,7 @@ data:
       params:
         split: "val"
         data_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+        preload_data: False
         load_observations: False
         chunk_size: 4
         n_chunk_per_traj: 2

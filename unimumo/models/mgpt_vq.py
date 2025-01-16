@@ -25,6 +25,7 @@ class VQVae(pl.LightningModule):
         quantizer_config: dict,
         loss_config: dict,
         optimizer_config: dict,
+        mean_std_dir: str,
     ):
 
         super().__init__()
@@ -45,6 +46,18 @@ class VQVae(pl.LightningModule):
 
         self.optimizer_config = optimizer_config
 
+        # load mean and std
+        assert os.path.exists(pjoin(mean_std_dir, "mean.npy")), f"mean.npy not found in {mean_std_dir}"
+        assert os.path.exists(pjoin(mean_std_dir, "std.npy")), f"std.npy not found in {mean_std_dir}"
+        self.mean = torch.from_numpy(np.load(pjoin(mean_std_dir, "mean.npy"))).float()
+        self.std = torch.from_numpy(np.load(pjoin(mean_std_dir, "std.npy"))).float()
+
+    def normalize(self, x: Tensor) -> Tensor:
+        return (x - self.mean) / self.std
+
+    def denormalize(self, x: Tensor) -> Tensor:
+        return x * self.std + self.mean
+
     def preprocess(self, x: Tensor) -> Tensor:
         # (B, T, 8) -> (B, 8, T)
         x = x.permute(0, 2, 1)
@@ -58,6 +71,8 @@ class VQVae(pl.LightningModule):
     def training_step(self, batch: tp.Dict[str, torch.Tensor], batch_idx: int):
         trajectory = batch["trajectory"]  # (B, T, 8)
         description = batch["description"]  # (B,)
+
+        trajectory = self.normalize(trajectory)
 
         traj_recon, loss_commit, perplexity = self.forward(trajectory, description)
 
@@ -73,6 +88,8 @@ class VQVae(pl.LightningModule):
     def validation_step(self, batch: tp.Dict[str, torch.Tensor], batch_idx: int):
         trajectory = batch["trajectory"]
         description = batch["description"]
+
+        trajectory = self.normalize(trajectory)
 
         traj_recon, loss_commit, perplexity = self.forward(trajectory, description)
 
@@ -118,7 +135,9 @@ class VQVae(pl.LightningModule):
         features: Tensor,
     ) -> Tensor:
 
-        N, T, _ = features.shape
+        N, T, C = features.shape
+        assert C == 8, f"Expected 8 channels, got {C}"
+        features = self.normalize(features)
         x_in = self.preprocess(features)
         x_encoder = self.encoder(x_in)  # (N, C, T)
         x_encoder = self.postprocess(x_encoder)  # (N, T, C)
@@ -138,6 +157,7 @@ class VQVae(pl.LightningModule):
         # decoder
         x_decoder = self.decoder(x_d)
         x_out = self.postprocess(x_decoder)
+        x_out = self.denormalize(x_out)
         return x_out
 
 

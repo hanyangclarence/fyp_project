@@ -16,6 +16,7 @@ class MotionVQVAEDataset(Dataset):
             self,
             split: str,
             data_dir: str,
+            preload_data: bool = False,
             cameras: Tuple[str, ...] = ("left_shoulder", "right_shoulder", "wrist", "front"),
             image_size: str = "256,256",
             load_observations: bool = False,
@@ -34,13 +35,9 @@ class MotionVQVAEDataset(Dataset):
         self.chunk_size = chunk_size
         self.n_chunk_per_traj = n_chunk_per_traj
 
-        # TODO: load mean and std for data normalization
-
         # load data
-        self.data = []
         self.tasks = os.listdir(pjoin(data_dir, split))
-
-        all_demos = []
+        self.all_demos_ids = []
         for task in self.tasks:
             # get all the variations
             variation_folders = os.listdir(pjoin(data_dir, split, task))
@@ -49,17 +46,26 @@ class MotionVQVAEDataset(Dataset):
                 var = int(var_folder.replace("variation", ""))
                 num_episode = len(os.listdir(pjoin(data_dir, split, task, var_folder, "episodes")))
                 for eps in range(num_episode):
-                    all_demos.append((task, var, eps))
+                    self.all_demos_ids.append((task, var, eps))
 
-        for task, var, eps in tqdm(all_demos, desc=f"Loading {split} data"):
-            action_traj, descriptions = self.load_obs_traj(task, var, eps, load_observations)
-            self.data.append((action_traj, descriptions))
+        self.data = []
+        self.preload_data = preload_data
+        self.load_observations = load_observations
+        if preload_data:
+            for task, var, eps in tqdm(self.all_demos_ids, desc=f"Loading {split} data"):
+                action_traj, descriptions = self.load_obs_traj(task, var, eps, load_observations)
+                self.data.append((action_traj, descriptions))
+        print(f"{split} data loaded, total number of demos: {len(self.all_demos_ids)}")
 
     def __len__(self):
-        return len(self.data)
+        return len(self.all_demos_ids)
 
     def __getitem__(self, idx):
-        action_traj, descriptions = self.data[idx]
+        if self.preload_data:
+            action_traj, descriptions = self.data[idx]
+        else:
+            task, var, eps = self.all_demos_ids[idx]
+            action_traj, descriptions = self.load_obs_traj(task, var, eps, self.load_observations)
         len_traj = len(action_traj)
 
         # sample a random chunk
