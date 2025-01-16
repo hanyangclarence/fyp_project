@@ -3,20 +3,26 @@ import torch.nn as nn
 
 
 class MotionVqVaeLoss(nn.Module):
-    def __init__(self, commitment_loss_weight: float = 1.0, motion_weight: float = 1.0):
-        super().__init__()
-        self.commitment_loss_weight = commitment_loss_weight
-        self.motion_weight = motion_weight
-        self.recon_loss = nn.MSELoss()
+        def __init__(
+            self,
+            lambda_recon: float = 1.0,
+            lambda_commit: float = 0.02,
+        ):
+            super().__init__()
 
-    def forward(self, motion_gt: torch.Tensor, motion_recon: torch.Tensor, commitment_loss: torch.Tensor, split: str = "train"):
-        motion_rec_loss = self.recon_loss(motion_recon.contiguous(), motion_gt.contiguous())
+            self.recon_loss = nn.SmoothL1Loss(reduction="mean")
 
-        loss = self.motion_weight * motion_rec_loss + self.commitment_loss_weight * commitment_loss
-        rec_loss = self.motion_weight * motion_rec_loss
+            self.lambda_recon = lambda_recon
+            self.lambda_commit = lambda_commit
 
-        log = {"{}/total_loss".format(split): loss.clone().detach().mean(),
-               "{}/commitment_loss".format(split): commitment_loss.detach().mean(),
-               "{}/rec_loss".format(split): rec_loss.detach().mean(),
-               }
-        return loss, log
+        def forward(self, traj_ref, traj_recon, loss_commit, split):
+            loss_recon = self.recon_loss(traj_recon, traj_ref)
+
+            loss = self.lambda_recon * loss_recon + self.lambda_commit * loss_commit
+            loss_dict = {
+                f"{split}/loss_recon": loss_recon,
+                f"{split}/loss_commit": loss_commit,
+                f"{split}/loss": loss,
+            }
+
+            return loss, loss_dict

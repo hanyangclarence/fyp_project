@@ -2,30 +2,39 @@ model:
   base_learning_rate: 2e-4
   target: unimumo.models.motion_vqvae.MotionVQVAE
   params:
-    monitor: "val/rec_loss"
-    music_key: "waveform"
-    motion_key: "motion"
+    monitor: "val/loss"
     loss_config:
       target: unimumo.modules.loss.MotionVqVaeLoss
       params:
-        commitment_loss_weight: 0.02
-        motion_weight: 1.0
-    motion_config:
-      input_dim: 263
-      output_dim: 128
-      emb_dim_encoder: [ 256, 224, 192, 144, 128 ]
-      emb_dim_decoder: [ 128, 144, 192, 224, 256 ]
-      input_fps: 60
-      rvq_fps: 50
-      dilation_growth_rate: 2
-      depth_per_res_block: 6
+        lambda_commit: 0.02
+        lambda_recon: 1.0
+    encoder_decoder_config:
+      nfeats: 8
+      output_emb_width: 128
+      down_t: 3
+      stride_t: 2
+      width: 128
+      depth: 3
+      dilation_growth_rate: 3
+      norm: None
       activation: 'relu'
-    music_config:
-      vqvae_ckpt: 'pretrained/music_vqvae.bin'
-      freeze_codebook: True
-    pre_post_quantize_config:
-      pre_quant_conv_mult: 4
-      post_quant_conv_mult: 4
+    quantizer_config:
+      quantizer: "ema_reset"
+      code_num: 512
+      code_dim: 128
+    optimizer_config:
+      optimizer:
+        target: AdamW
+        params:
+          lr: 2e-4
+          betas: [ 0.9, 0.99 ]
+          weight_decay: 0.0
+      lr_scheduler:
+        target: CosineAnnealingLR
+        params:
+          T_max: 1000  # not sure about this
+          eta_min: 1e-6
+
 
 
 data:

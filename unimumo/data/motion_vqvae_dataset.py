@@ -34,6 +34,8 @@ class MotionVQVAEDataset(Dataset):
         self.chunk_size = chunk_size
         self.n_chunk_per_traj = n_chunk_per_traj
 
+        # TODO: load mean and std for data normalization
+
         # load data
         self.data = []
         self.tasks = os.listdir(pjoin(data_dir, split))
