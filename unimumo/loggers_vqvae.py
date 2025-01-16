@@ -83,6 +83,11 @@ class TrajectoryLogger(Callback):
             recon_traj = trajectory_recon[b].cpu().numpy()
             desc = description[b]
 
+            # process recon trajectory to make it feasible
+            recon_traj[:, -1] = (recon_traj[:, -1] > 0.5).astype(np.float32)
+            # ensure recon_traj[:, 3:7] is unit quaternion
+            recon_traj[:, 3:7] /= np.linalg.norm(recon_traj[:, 3:7], axis=1, keepdims=True)
+
             task = self.env.env.get_task(task_file_to_task_class(task_str))
             task.set_variation(var)
 
