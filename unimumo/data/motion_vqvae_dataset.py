@@ -6,6 +6,8 @@ import random
 from typing import Tuple
 from tqdm import tqdm
 
+import pytorch_lightning.loops.fit_loop
+
 from rlbench.demo import Demo
 
 from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, keypoint_discovery, interpolate_trajectory
@@ -71,7 +73,7 @@ class MotionVQVAEDataset(Dataset):
         # sample a random chunk
         start_idx = random.randint(0, len_traj // self.chunk_size - self.n_chunk_per_traj) * self.chunk_size
         end_idx = start_idx + self.chunk_size * self.n_chunk_per_traj
-        traj = action_traj[start_idx:end_idx]  # (T, 8)
+        traj = action_traj[start_idx:end_idx].float()  # (T, 8), also convert to float32 tensor
 
         # TODO: data augmentation?
 

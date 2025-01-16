@@ -2,7 +2,7 @@ model:
   target: unimumo.models.mgpt_vq.VQVae
   params:
     monitor: "val/loss"
-    mean_std_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+    mean_std_dir: "/home/hanyang/code/fyp/fyp_project/data/peract"
     loss_config:
       target: unimumo.modules.loss.MotionVqVaeLoss
       params:
@@ -39,14 +39,14 @@ model:
 data:
   target: train.DataModuleFromConfig
   params:
-    batch_size: 32
+    batch_size: 7
     wrap: True
     num_workers: 4
     train:
       target: unimumo.data.motion_vqvae_dataset.MotionVQVAEDataset
       params:
         split: "train"
-        data_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+        data_dir: "/home/hanyang/code/fyp/fyp_project/data/peract"
         preload_data: False
         load_observations: False
         chunk_size: 4
@@ -56,7 +56,7 @@ data:
       target: unimumo.data.motion_vqvae_dataset.MotionVQVAEDataset
       params:
         split: "val"
-        data_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+        data_dir: "/home/hanyang/code/fyp/fyp_project/data/peract"
         preload_data: False
         load_observations: False
         chunk_size: 4
@@ -71,7 +71,7 @@ lightning:
         save_video: false
         num_videos: 3
         rlb_config:
-          data_path: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+          data_path: "/home/hanyang/code/fyp/fyp_project/data/peract"
           image_size: "256,256"
           apply_rgb: True
           apply_pc: True

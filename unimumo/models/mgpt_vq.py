@@ -26,6 +26,7 @@ class VQVae(pl.LightningModule):
         loss_config: dict,
         optimizer_config: dict,
         mean_std_dir: str,
+        monitor: Optional[str] = None,
     ):
 
         super().__init__()
@@ -56,10 +57,18 @@ class VQVae(pl.LightningModule):
         self.last_train_batch = None
         self.last_val_batch = None
 
+        self.monitor = monitor
+
     def normalize(self, x: Tensor) -> Tensor:
+        self.mean = self.mean.to(x.device)
+        self.std = self.std.to(x.device)
+
         return (x - self.mean) / self.std
 
     def denormalize(self, x: Tensor) -> Tensor:
+        self.mean = self.mean.to(x.device)
+        self.std = self.std.to(x.device)
+
         return x * self.std + self.mean
 
     def preprocess(self, x: Tensor) -> Tensor:
@@ -84,6 +93,7 @@ class VQVae(pl.LightningModule):
 
         loss, loss_dict = self.loss(trajectory, traj_recon, loss_commit, split="train")
 
+        self.log("train/loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=False)
         self.log_dict(loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=False)
 
         # also log the learning rate
@@ -103,18 +113,19 @@ class VQVae(pl.LightningModule):
 
         loss, loss_dict = self.loss(trajectory, traj_recon, loss_commit, split="val")
 
+        self.log("val/loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=False)
         self.log_dict(loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=False)
         return loss
 
     def configure_optimizers(self):
         # optimizer
-        optim_target = "torch.optim" + self.optimizer_config["optimizer"]["target"]
+        optim_target = "torch.optim." + self.optimizer_config["optimizer"]["target"]
         optimizer = get_obj_from_str(optim_target)(
             self.parameters(), **self.optimizer_config["optimizer"]["params"]
         )
 
         # scheduler
-        scheduler_target = "torch.optim.lr_scheduler" + self.optimizer_config["lr_scheduler"]["target"]
+        scheduler_target = "torch.optim.lr_scheduler." + self.optimizer_config["lr_scheduler"]["target"]
         scheduler = get_obj_from_str(scheduler_target)(
             optimizer, **self.optimizer_config["lr_scheduler"]["params"]
         )

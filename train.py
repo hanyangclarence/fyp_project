@@ -395,6 +395,9 @@ if __name__ == "__main__":
                 "filename": "{epoch:06}",
                 "verbose": True,
                 "save_last": True,
+                "monitor": config.model.params.monitor,
+                "mode": "min",  # Assuming lower loss is better
+                "save_top_k": 3
             }
         }
         if hasattr(model, "monitor"):
