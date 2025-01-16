@@ -26,21 +26,24 @@ class TrajectoryLogger(Callback):
             save_video: bool = True,
             num_videos: int = 1,
             rlb_config: dict = None,
+            save_freq_epoch: int = 10,
     ):
         super().__init__()
         self.save_video = save_video
         self.num_videos = num_videos
         self.rlb_config = rlb_config
+        self.save_freq_epoch = save_freq_epoch
 
         self.env = None
 
     def on_train_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        if self.save_video and trainer.global_rank == 0:
-            batch = pl_module.last_train_batch
-            self.visualize_save_trajectories(batch, pl_module, "train")
+        # if self.save_video and trainer.global_rank == 0 and pl_module.current_epoch % self.save_freq_epoch == 0:
+        #     batch = pl_module.last_train_batch
+        #     self.visualize_save_trajectories(batch, pl_module, "train")
+        pass
 
     def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        if self.save_video and trainer.global_rank == 0:
+        if self.save_video and trainer.global_rank == 0 and pl_module.current_epoch % self.save_freq_epoch == 0:
             batch = pl_module.last_val_batch
             self.visualize_save_trajectories(batch, pl_module, "val")
 
