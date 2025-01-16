@@ -470,8 +470,6 @@ if __name__ == "__main__":
 
         trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
 
-        trainer_kwargs["log_every_n_steps"] = 3
-
         # !!!!!
         if trainer_kwargs.get('strategy') is not None:
             del trainer_kwargs['strategy']

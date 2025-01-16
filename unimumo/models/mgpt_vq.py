@@ -113,7 +113,7 @@ class VQVae(pl.LightningModule):
 
         loss, loss_dict = self.loss(trajectory, traj_recon, loss_commit, split="val")
 
-        self.log("val/loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=False)
+        self.log("val/loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
         self.log_dict(loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=False)
         return loss
 
