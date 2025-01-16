@@ -16,7 +16,7 @@ from pytorch_lightning import LightningModule, Trainer
 from pyrep.objects.dummy import Dummy
 from pyrep.objects.vision_sensor import VisionSensor
 
-from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, Mover
+from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, Mover, task_file_to_task_class
 from unimumo.rlbench.utils_with_recorder import TaskRecorder, StaticCameraMotion, CircleCameraMotion, AttachedCameraMotion
 
 
@@ -83,7 +83,7 @@ class TrajectoryLogger(Callback):
             recon_traj = trajectory_recon[b].cpu().numpy()
             desc = description[b]
 
-            task = self.env.env.get_task(task_str)
+            task = self.env.env.get_task(task_file_to_task_class(task_str))
             task.set_variation(var)
 
             # setup video recorder
