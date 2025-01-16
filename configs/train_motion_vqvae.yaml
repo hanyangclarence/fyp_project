@@ -35,36 +35,22 @@ data:
     wrap: True
     num_workers: 4
     train:
-      target: unimumo.data.music_motion_dataset.MusicMotionDataset
+      target: unimumo.data.motion_vqvae_dataset.MotionVQVAEDataset
       params:
         split: "train"
-        music_dir: 'data/music/audios'
-        motion_dir: 'data/motion'
-        music_meta_dir: 'data/music'
-        music_beat_dir: 'data/music/music4all_beat'
-        duration: 2
-        use_humanml3d: True
-        music_dataset_name: 'music4all'
-        traverse_motion: True
-        align: False
-        motion_fps: 60
-        dance_repeat_time: 20
+        data_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+        load_observations: False
+        chunk_size: 4
+        n_chunk_per_traj: 2
 
     validation:
-      target: unimumo.data.music_motion_dataset.MusicMotionDataset
+      target: unimumo.data.motion_vqvae_dataset.MotionVQVAEDataset
       params:
         split: "val"
-        music_dir: 'data/music/audios'
-        motion_dir: 'data/motion'
-        music_meta_dir: 'data/music'
-        music_beat_dir: 'data/music/music4all_beat'
-        duration: 2
-        use_humanml3d: True
-        music_dataset_name: 'music4all'
-        traverse_motion: True
-        align: False
-        motion_fps: 60
-        dance_repeat_time: 20
+        data_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+        load_observations: False
+        chunk_size: 4
+        n_chunk_per_traj: 2
 
 
 lightning:
