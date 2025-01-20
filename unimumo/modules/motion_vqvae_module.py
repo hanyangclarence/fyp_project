@@ -89,8 +89,6 @@ class Encoder(nn.Module):
         input_dim=263,
         output_dim=16,
         emb_dim_encoder=(256, 192, 128, 64, 32, 16),
-        input_fps=20,
-        rvq_fps=50,
         dilation_growth_rate=2,
         depth_per_res_block=6,
         activation='relu',
@@ -98,9 +96,6 @@ class Encoder(nn.Module):
         **kwargs
     ):
         super().__init__()
-
-        self.input_fps = input_fps
-        self.rvq_fps = rvq_fps
 
         self.init_conv = nn.Sequential(
             nn.Conv1d(input_dim, emb_dim_encoder[0], 3, 1, 1),
@@ -118,6 +113,9 @@ class Encoder(nn.Module):
                 Resnet1D(out_channel, n_depth=depth_per_res_block, dilation_growth_rate=dilation_growth_rate,
                          activation=activation, norm=norm)
             )
+            if i % 2 == 0:
+                block.add_module("downsample", nn.MaxPool1d(2))
+
             blocks.append(block)
 
         self.resnet_model = nn.Sequential(*blocks)
@@ -125,10 +123,6 @@ class Encoder(nn.Module):
         self.post_conv = nn.Conv1d(emb_dim_encoder[-1], output_dim, 3, 1, 1)
 
     def forward(self, x):
-        input_T = x.shape[-1]
-        target_T = round(input_T / self.input_fps * self.rvq_fps)
-        x = nn.functional.interpolate(x, size=target_T, mode='linear')
-
         x = self.init_conv(x)
         x = self.resnet_model(x)
         x = self.post_conv(x)
@@ -142,8 +136,6 @@ class Decoder(nn.Module):
         input_dim=263,
         output_dim=16,
         emb_dim_decoder=(16, 32, 64, 128, 192, 256),
-        input_fps=20,
-        rvq_fps=50,
         dilation_growth_rate=2,
         depth_per_res_block=6,
         activation='relu',
@@ -151,9 +143,6 @@ class Decoder(nn.Module):
         **kwargs
     ):
         super().__init__()
-
-        self.input_fps = input_fps
-        self.rvq_fps = rvq_fps
 
         self.init_conv = nn.Sequential(
             nn.Conv1d(output_dim, emb_dim_decoder[0], 3, 1, 1),
@@ -170,6 +159,9 @@ class Decoder(nn.Module):
                          dilation_growth_rate, reverse_dilation=True, activation=activation, norm=norm),
                 nn.Conv1d(in_channel, out_channel, 3, 1, 1)
             )
+            if i % 2 == 0:
+                block.add_module("upsample", nn.Upsample(scale_factor=2))
+
             blocks.append(block)
         self.resnet_block = nn.Sequential(*blocks)
 
@@ -183,9 +175,5 @@ class Decoder(nn.Module):
         x = self.init_conv(x)
         x = self.resnet_block(x)
         x = self.post_conv(x)
-
-        current_T = x.shape[-1]
-        target_T = round(current_T / self.rvq_fps * self.input_fps)
-        x = nn.functional.interpolate(x, target_T, mode='linear')
 
         return x

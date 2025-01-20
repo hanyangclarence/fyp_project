@@ -9,19 +9,18 @@ model:
         lambda_commit: 0.02
         lambda_recon: 1.0
     encoder_decoder_config:
-      input_emb_width: 8
-      output_emb_width: 256
-      down_t: 3
-      stride_t: 2
-      width: 256
-      depth: 4
-      dilation_growth_rate: 3
-      norm: None
+      input_dim: 8
+      output_dim: 128
+      emb_dim_encoder: [8, 16, 32, 64, 128]
+      emb_dim_decoder: [128, 64, 32, 16, 8]
+      dilation_growth_rate: 2
+      depth_per_res_block: 6
       activation: 'relu'
     quantizer_config:
-      quantizer: "ema_reset"
-      code_num: 512
-      code_dim: 256
+      dimension: 128
+      n_q: 1
+      q_dropout: False,
+      bins: 512
     optimizer_config:
       optimizer:
         target: AdamW
