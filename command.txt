@@ -2,3 +2,4 @@
 
 srun --qos=gpu -p gpu_24h --gres=gpu:1 -w gpu42 --pty /bin/bash
 
+python train.py --stage train_vqvae --base configs/train_motion_vqvae.yaml

@@ -99,6 +99,14 @@ class VQVae(pl.LightningModule):
         # also log the learning rate
         self.log("lr", self.trainer.optimizers[0].param_groups[0]["lr"], prog_bar=True, logger=True, on_step=True, on_epoch=False)
 
+        # calculate the mean value of the model parameter and log the value
+        enc_param_mean = torch.mean(torch.stack([torch.mean(param) for param in self.encoder.parameters()]))
+        dec_param_mean = torch.mean(torch.stack([torch.mean(param) for param in self.decoder.parameters()]))
+        quant_param_mean = torch.mean(self.quantizer.codebook)
+        self.log("enc_param_mean", enc_param_mean, prog_bar=True, logger=True, on_step=True, on_epoch=False)
+        self.log("dec_param_mean", dec_param_mean, prog_bar=True, logger=True, on_step=True, on_epoch=False)
+        self.log("quant_param_mean", quant_param_mean, prog_bar=True, logger=True, on_step=True, on_epoch=False)
+
         return loss
 
     def validation_step(self, batch: tp.Dict[str, torch.Tensor], batch_idx: int):
