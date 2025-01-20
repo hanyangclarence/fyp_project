@@ -1,5 +1,5 @@
 model:
-  target: unimumo.models.mgpt_vq.VQVae
+  target: unimumo.models.motion_vqvae.MotionVQVAE
   params:
     monitor: "val_loss"
     mean_std_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"

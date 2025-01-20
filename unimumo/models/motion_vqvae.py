@@ -82,8 +82,6 @@ class MotionVQVAE(pl.LightningModule):
         self.log("dec_param_mean", dec_param_mean, prog_bar=True, logger=True, on_step=True, on_epoch=False)
         self.log("quant_param_mean", quant_param_mean, prog_bar=True, logger=True, on_step=True, on_epoch=False)
 
-        print(self.quantizer.state_dict())
-
         return loss
 
     def validation_step(self, batch: tp.Dict[str, torch.Tensor], batch_idx: int):
@@ -97,8 +95,8 @@ class MotionVQVAE(pl.LightningModule):
         traj_recon, commitment_loss = self.forward(trajectory, description)
         loss, loss_dict = self.loss(trajectory, traj_recon, commitment_loss, split="val")
 
-        self.log("val/loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-        self.log_dict(loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        self.log("val_loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        self.log_dict(loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=False)
         return loss
 
     def configure_optimizers(self):
