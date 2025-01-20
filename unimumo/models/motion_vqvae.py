@@ -75,8 +75,8 @@ class MotionVQVAE(pl.LightningModule):
         self.log("lr", self.trainer.optimizers[0].param_groups[0]["lr"], prog_bar=True, logger=True, on_step=True, on_epoch=False)
 
         # calculate the mean value of the model parameter and log the value
-        enc_param_mean = torch.mean(torch.stack([torch.mean(param) for param in self.encoder.parameters()]))
-        dec_param_mean = torch.mean(torch.stack([torch.mean(param) for param in self.decoder.parameters()]))
+        enc_param_mean = torch.mean(torch.stack([torch.mean(param) for param in self.motion_encoder.parameters()]))
+        dec_param_mean = torch.mean(torch.stack([torch.mean(param) for param in self.motion_decoder.parameters()]))
         quant_param_mean = torch.mean(torch.stack([torch.mean(param) for param in self.quantizer.state_dict().values()]))
         self.log("enc_param_mean", enc_param_mean, prog_bar=True, logger=True, on_step=True, on_epoch=False)
         self.log("dec_param_mean", dec_param_mean, prog_bar=True, logger=True, on_step=True, on_epoch=False)
