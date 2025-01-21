@@ -22,6 +22,7 @@ class MotionVQVAE(pl.LightningModule):
         optimizer_config: dict,
         mean_std_dir: str,
         monitor: tp.Optional[str] = None,
+        normalize_motion: bool = True,
     ):
         super().__init__()
 
@@ -35,10 +36,14 @@ class MotionVQVAE(pl.LightningModule):
         self.optimizer_config = optimizer_config
 
         # load mean and std
-        assert os.path.exists(pjoin(mean_std_dir, "mean.npy")), f"mean.npy not found in {mean_std_dir}"
-        assert os.path.exists(pjoin(mean_std_dir, "std.npy")), f"std.npy not found in {mean_std_dir}"
-        self.mean = torch.from_numpy(np.load(pjoin(mean_std_dir, "mean.npy"))).float()
-        self.std = torch.from_numpy(np.load(pjoin(mean_std_dir, "std.npy"))).float()
+        if normalize_motion:
+            assert os.path.exists(pjoin(mean_std_dir, "mean.npy")), f"mean.npy not found in {mean_std_dir}"
+            assert os.path.exists(pjoin(mean_std_dir, "std.npy")), f"std.npy not found in {mean_std_dir}"
+            self.mean = torch.from_numpy(np.load(pjoin(mean_std_dir, "mean.npy"))).float()
+            self.std = torch.from_numpy(np.load(pjoin(mean_std_dir, "std.npy"))).float()
+        else:
+            self.mean = torch.zeros(8)
+            self.std = torch.ones(8)
 
         # store the last batch for visualization
         self.last_train_batch = None

@@ -3,6 +3,7 @@ model:
   params:
     monitor: "val_loss"
     mean_std_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+    normalize_motion: True
     loss_config:
       target: unimumo.modules.loss.MotionVqVaeLoss
       params:

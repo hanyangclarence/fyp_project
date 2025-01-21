@@ -2,4 +2,6 @@
 
 srun --qos=gpu -p gpu_24h --gres=gpu:1 -w gpu42 --pty /bin/bash
 
+sbatch --qos=gpu -p gpu_24h --gres=gpu:1 -w gpu42 launch_job.cmd
+
 xvfb-run python train.py --stage train_vqvae --base configs/train_motion_vqvae.yaml

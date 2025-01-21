@@ -114,11 +114,17 @@ class TrajectoryLogger(Callback):
             save_dir = pjoin(pl_module.logger.log_dir, split)
             os.makedirs(save_dir, exist_ok=True)
 
-            self.run_single_trajectory(gt_traj, task, task_str, var, eps)
-            tr.save(pjoin(save_dir, f"e{pl_module.current_epoch}_b{b}_var{var}_eps{eps}_gt.mp4"))
+            try:
+                self.run_single_trajectory(gt_traj, task, task_str, var, eps)
+                tr.save(pjoin(save_dir, f"e{pl_module.current_epoch}_b{b}_var{var}_eps{eps}_gt.mp4"))
+            except Exception as e:
+                print(f"Error running GT trajectory: {e}")
 
-            self.run_single_trajectory(recon_traj, task, task_str, var, eps)
-            tr.save(pjoin(save_dir, f"e{pl_module.current_epoch}_b{b}_var{var}_eps{eps}_recon.mp4"))
+            try:
+                self.run_single_trajectory(recon_traj, task, task_str, var, eps)
+                tr.save(pjoin(save_dir, f"e{pl_module.current_epoch}_b{b}_var{var}_eps{eps}_recon.mp4"))
+            except Exception as e:
+                print(f"Error running recon trajectory: {e}")
 
         # clean up
         self.env.env.shutdown()
