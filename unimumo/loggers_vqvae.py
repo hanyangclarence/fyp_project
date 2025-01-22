@@ -16,7 +16,7 @@ from pytorch_lightning import LightningModule, Trainer
 from pyrep.objects.dummy import Dummy
 from pyrep.objects.vision_sensor import VisionSensor
 
-from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, Mover, task_file_to_task_class
+from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, Mover, task_file_to_task_class, traj_euler_to_quat
 from unimumo.rlbench.utils_with_recorder import TaskRecorder, StaticCameraMotion, CircleCameraMotion, AttachedCameraMotion
 
 
@@ -37,10 +37,9 @@ class TrajectoryLogger(Callback):
         self.env = None
 
     def on_train_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        # if self.save_video and trainer.global_rank == 0 and pl_module.current_epoch % self.save_freq_epoch == 0:
-        #     batch = pl_module.last_train_batch
-        #     self.visualize_save_trajectories(batch, pl_module, "train")
-        pass
+        if self.save_video and trainer.global_rank == 0 and pl_module.current_epoch % self.save_freq_epoch == 0:
+            batch = pl_module.last_train_batch
+            self.visualize_save_trajectories(batch, pl_module, "train")
 
     def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         if self.save_video and trainer.global_rank == 0 and pl_module.current_epoch % self.save_freq_epoch == 0:
@@ -67,7 +66,7 @@ class TrajectoryLogger(Callback):
 
         # initialize env
         self.env = RLBenchEnv(
-            data_path=pjoin(self.rlb_config["data_path"], "val"),
+            data_path=pjoin(self.rlb_config["data_path"], split),
             image_size=[int(x) for x in self.rlb_config["image_size"].split(",")],
             apply_rgb=self.rlb_config["apply_rgb"],
             apply_pc=self.rlb_config["apply_pc"],
@@ -85,6 +84,11 @@ class TrajectoryLogger(Callback):
             gt_traj = trajectory[b].cpu().numpy()
             recon_traj = trajectory_recon[b].cpu().numpy()
             desc = description[b]
+
+            if pl_module.motion_mode == "euler":
+                # if the trajectory is loaded with euler angle, then convert to quaternion
+                gt_traj = traj_euler_to_quat(gt_traj)
+                recon_traj = traj_euler_to_quat(recon_traj)
 
             # process recon trajectory to make it feasible
             recon_traj[:, -1] = (recon_traj[:, -1] > 0.5).astype(np.float32)

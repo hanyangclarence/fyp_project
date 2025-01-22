@@ -143,7 +143,7 @@ def data_collate(batch):
 class DataModuleFromConfig(pl.LightningDataModule):
     def __init__(
             self, batch_size, train=None, validation=None, test=None, wrap=False, num_workers=None,
-            shuffle_test_loader=False, shuffle_val_dataloader=False
+            shuffle_test_loader=False, shuffle_val_dataloader=True
     ):
         super().__init__()
         self.collate = data_collate

@@ -1,8 +1,10 @@
 model:
-  target: unimumo.models.mgpt_vq.VQVae
+  target: unimumo.models.motion_vqvae.MotionVQVAE
   params:
     monitor: "val_loss"
-    mean_std_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+    mean_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/mean_default.npy"
+    std_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/std_default.npy"
+    motion_mode: "default"  # "default" or "euler"
     normalize_motion: True
     loss_config:
       target: unimumo.modules.loss.MotionVqVaeLoss
@@ -10,19 +12,18 @@ model:
         lambda_commit: 0.02
         lambda_recon: 1.0
     encoder_decoder_config:
-      input_emb_width: 8
-      output_emb_width: 128
-      down_t: 3
-      stride_t: 2
-      width: 128
-      depth: 3
-      dilation_growth_rate: 3
-      norm: None
+      input_dim: 8
+      output_dim: 128
+      emb_dim_encoder: [8, 16, 32, 64, 128]
+      emb_dim_decoder: [128, 64, 32, 16, 8]
+      dilation_growth_rate: 2
+      depth_per_res_block: 6
       activation: 'relu'
     quantizer_config:
-      quantizer: "ema_reset"
-      code_num: 512
-      code_dim: 128
+      dimension: 128
+      n_q: 1
+      q_dropout: False,
+      bins: 512
     optimizer_config:
       optimizer:
         target: AdamW
@@ -33,7 +34,7 @@ model:
       lr_scheduler:
         target: CosineAnnealingLR
         params:
-          T_max: 1000  # not sure about this
+          T_max: 2000  # not sure about this
           eta_min: 1e-6
 
 
@@ -52,6 +53,7 @@ data:
         load_observations: False
         chunk_size: 4
         n_chunk_per_traj: 4
+        load_quaternion: True
 
     validation:
       target: unimumo.data.motion_vqvae_dataset.MotionVQVAEDataset
@@ -62,6 +64,7 @@ data:
         load_observations: False
         chunk_size: 4
         n_chunk_per_traj: 4
+        load_quaternion: True
 
 
 lightning:
@@ -71,7 +74,7 @@ lightning:
       params:
         save_video: True
         num_videos: 1
-        save_freq_epoch: 10
+        save_freq_epoch: 50
         rlb_config:
           data_path: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
           image_size: "256,256"

@@ -20,9 +20,11 @@ class MotionVQVAE(pl.LightningModule):
         quantizer_config: dict,
         loss_config: dict,
         optimizer_config: dict,
-        mean_std_dir: str,
+        mean_dir: str,
+        std_dir: str,
         monitor: tp.Optional[str] = None,
         normalize_motion: bool = True,
+        motion_mode: str = None,
     ):
         super().__init__()
 
@@ -37,19 +39,18 @@ class MotionVQVAE(pl.LightningModule):
 
         # load mean and std
         if normalize_motion:
-            assert os.path.exists(pjoin(mean_std_dir, "mean.npy")), f"mean.npy not found in {mean_std_dir}"
-            assert os.path.exists(pjoin(mean_std_dir, "std.npy")), f"std.npy not found in {mean_std_dir}"
-            self.mean = torch.from_numpy(np.load(pjoin(mean_std_dir, "mean.npy"))).float()
-            self.std = torch.from_numpy(np.load(pjoin(mean_std_dir, "std.npy"))).float()
+            self.mean = torch.from_numpy(np.load(mean_dir)).float()
+            self.std = torch.from_numpy(np.load(std_dir)).float()
         else:
-            self.mean = torch.zeros(8)
-            self.std = torch.ones(8)
+            self.mean = torch.zeros(encoder_decoder_config['input_dim'])
+            self.std = torch.ones(encoder_decoder_config['input_dim'])
 
         # store the last batch for visualization
         self.last_train_batch = None
         self.last_val_batch = None
 
         self.monitor = monitor
+        self.motion_mode = motion_mode
 
     def normalize(self, x: Tensor) -> Tensor:
         self.mean = self.mean.to(x.device)

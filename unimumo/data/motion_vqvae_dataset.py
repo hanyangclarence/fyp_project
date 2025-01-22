@@ -5,8 +5,8 @@ from os.path import join as pjoin
 import random
 from typing import Tuple
 from tqdm import tqdm
-
-import pytorch_lightning.loops.fit_loop
+import quaternion
+import numpy as np
 
 from rlbench.demo import Demo
 
@@ -22,6 +22,7 @@ class MotionVQVAEDataset(Dataset):
             cameras: Tuple[str, ...] = ("left_shoulder", "right_shoulder", "wrist", "front"),
             image_size: str = "256,256",
             load_observations: bool = False,
+            load_quaternion: bool = True,
             chunk_size: int = 4,  # number of frames in a chunk
             n_chunk_per_traj: int = 2,  # number of chunks in a trajectory
     ):
@@ -59,6 +60,8 @@ class MotionVQVAEDataset(Dataset):
                 self.data.append((action_traj, descriptions, task, var, eps))
         print(f"{split} data loaded, total number of demos: {len(self.all_demos_ids)}")
 
+        self.load_quaternion = load_quaternion
+
     def __len__(self):
         return len(self.all_demos_ids)
 
@@ -74,6 +77,7 @@ class MotionVQVAEDataset(Dataset):
         start_idx = random.randint(0, len_traj // self.chunk_size - self.n_chunk_per_traj) * self.chunk_size
         end_idx = start_idx + self.chunk_size * self.n_chunk_per_traj
         traj = action_traj[start_idx:end_idx].float()  # (T, 8), also convert to float32 tensor
+        print(start_idx, end_idx, traj.shape, "herehere")
 
         # TODO: data augmentation?
 
@@ -107,6 +111,16 @@ class MotionVQVAEDataset(Dataset):
 
             for j in range(start_frame, end_frame):
                 _, action = self.env.get_obs_action(demo[j])  # action: (8)
+
+                if not self.load_quaternion:
+                    trans = action[:3]
+                    rot_quat = action[3:7]
+                    gripper = action[7:]
+                    # convert quaternion to euler angles
+                    rot_angle = quaternion.as_euler_angles(quaternion.quaternion(rot_quat[0], rot_quat[1], rot_quat[2], rot_quat[3]))
+                    action = np.concatenate([trans, rot_angle, gripper], axis=0)
+                    action = torch.tensor(action, dtype=torch.float32)
+
                 traj_segment.append(action.unsqueeze(0))
             traj_segment = torch.cat(traj_segment, dim=0)  # (n_frames, 8)
 
