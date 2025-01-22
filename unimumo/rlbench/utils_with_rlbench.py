@@ -337,7 +337,13 @@ class RLBenchEnv:
 
         # fetch action
         action = np.concatenate([obs.gripper_pose, [obs.gripper_open]])
-        return state_dict, torch.from_numpy(action).float()
+
+        # fetch proprioception
+        proprioception = np.concatenate([
+            obs.joint_positions, obs.joint_velocities, obs.gripper_joint_positions
+        ])  # len 7 + 7 + 2 = 16
+
+        return state_dict, torch.from_numpy(action).float(), torch.from_numpy(proprioception).float()
 
     def get_rgb_pcd_gripper_from_obs(self, obs):
         """
