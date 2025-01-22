@@ -38,12 +38,14 @@ class MotionVQVAE(pl.LightningModule):
         self.optimizer_config = optimizer_config
 
         # load mean and std
+        self.input_dim = encoder_decoder_config['input_dim']
         if normalize_motion:
             self.mean = torch.from_numpy(np.load(mean_dir)).float()
             self.std = torch.from_numpy(np.load(std_dir)).float()
+            assert self.mean.shape == self.std.shape == (self.input_dim,), f"Expected shape {(self.input_dim,)}, got {self.mean.shape} or {self.std.shape}"
         else:
-            self.mean = torch.zeros(encoder_decoder_config['input_dim'])
-            self.std = torch.ones(encoder_decoder_config['input_dim'])
+            self.mean = torch.zeros(self.input_dim)
+            self.std = torch.ones(self.input_dim)
 
         # store the last batch for visualization
         self.last_train_batch = None
@@ -145,7 +147,7 @@ class MotionVQVAE(pl.LightningModule):
 
     def encode(self, trajectory: Tensor):
         N, T, C = trajectory.shape
-        assert C == 8, f"Expected 8 channels, got {C}"
+        assert C == self.input_dim, f"Expected {self.input_dim} channels, got {C}"
 
         trajectory = self.normalize(trajectory)
 
