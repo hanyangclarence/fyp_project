@@ -343,16 +343,9 @@ class RLBenchEnv:
             proprioception = np.concatenate([
                 obs.joint_positions, obs.joint_velocities, obs.gripper_joint_positions
             ])  # len 7 + 7 + 2 = 16
+            print(f'Complete!')
         else:
             proprioception = np.zeros(16)
-            msg = None
-            if obs.joint_positions is None:
-                msg = "joint_positions! "
-            if obs.joint_velocities is None:
-                msg += "joint_velocities! "
-            if obs.gripper_joint_positions is None:
-                msg += "gripper_joint_positions! "
-            print(f"Missing {msg}")
 
         return state_dict, torch.from_numpy(action).float(), torch.from_numpy(proprioception).float()
 
