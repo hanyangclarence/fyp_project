@@ -89,6 +89,10 @@ class TrajectoryLogger(Callback):
                 # if the trajectory is loaded with euler angle, then convert to quaternion
                 gt_traj = traj_euler_to_quat(gt_traj)
                 recon_traj = traj_euler_to_quat(recon_traj)
+            elif pl_module.motion_mode == "proprior":
+                # if the trajectory is loaded with proprioception, then remove the last 16 dims
+                gt_traj = gt_traj[:, :-16]
+                recon_traj = recon_traj[:, :-16]
 
             # process recon trajectory to make it feasible
             recon_traj[:, -1] = (recon_traj[:, -1] > 0.5).astype(np.float32)
