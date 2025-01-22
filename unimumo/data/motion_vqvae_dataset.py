@@ -77,7 +77,6 @@ class MotionVQVAEDataset(Dataset):
         start_idx = random.randint(0, len_traj // self.chunk_size - self.n_chunk_per_traj) * self.chunk_size
         end_idx = start_idx + self.chunk_size * self.n_chunk_per_traj
         traj = action_traj[start_idx:end_idx].float()  # (T, 8), also convert to float32 tensor
-        print(start_idx, end_idx, traj.shape, "herehere")
 
         # TODO: data augmentation?
 
