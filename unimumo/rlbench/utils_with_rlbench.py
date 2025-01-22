@@ -13,6 +13,7 @@ import torch
 import torch.nn.functional as F
 import einops
 from scipy.interpolate import CubicSpline, interp1d
+import quaternion
 
 from rlbench.observation_config import ObservationConfig, CameraConfig
 from rlbench.environment import Environment
@@ -956,3 +957,20 @@ def interpolate_trajectory(trajectory, interpolation_length: int):
     if trajectory.shape[1] == 8:
         resampled[:, 3:7] = normalise_quat(resampled[:, 3:7])
     return resampled
+
+
+def traj_euler_to_quat(trajectory):
+    # convert the trajectory represented with euler angles to quaternions
+    assert len(trajectory.shape) == 2
+    assert trajectory.shape[-1] == 7
+
+    new_traj = []
+    for action in trajectory:
+        rot_quat = quaternion.as_float_array(
+            quaternion.from_euler_angles(action[3:6])
+        )
+        new_traj.append(
+            np.concatenate([action[:3], rot_quat, action[6:]], axis=0)[None, ...]
+        )
+
+    return np.concatenate(new_traj, axis=0)
