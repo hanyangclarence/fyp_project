@@ -23,6 +23,7 @@ class MotionVQVAEDataset(Dataset):
             image_size: str = "256,256",
             load_observations: bool = False,
             load_quaternion: bool = True,
+            load_proprioception: bool = True,
             chunk_size: int = 4,  # number of frames in a chunk
             n_chunk_per_traj: int = 2,  # number of chunks in a trajectory
     ):
@@ -61,6 +62,7 @@ class MotionVQVAEDataset(Dataset):
         print(f"{split} data loaded, total number of demos: {len(self.all_demos_ids)}")
 
         self.load_quaternion = load_quaternion
+        self.load_proprioception = load_proprioception
 
     def __len__(self):
         return len(self.all_demos_ids)
@@ -109,7 +111,7 @@ class MotionVQVAEDataset(Dataset):
             end_frame = key_frame_ids[i + 1]
 
             for j in range(start_frame, end_frame):
-                _, action = self.env.get_obs_action(demo[j])  # action: (8)
+                _, action, proprioception = self.env.get_obs_action(demo[j])  # action: (8), proprioception: (16)
 
                 if not self.load_quaternion:
                     trans = action[:3]
@@ -120,7 +122,11 @@ class MotionVQVAEDataset(Dataset):
                     action = np.concatenate([trans, rot_angle, gripper], axis=0)
                     action = torch.tensor(action, dtype=torch.float32)
 
-                traj_segment.append(action.unsqueeze(0))
+                if not self.load_proprioception:
+                    traj_segment.append(action.unsqueeze(0))
+                else:
+                    traj_segment.append(torch.cat([action.unsqueeze(0), proprioception.unsqueeze(0)], dim=1))
+
             traj_segment = torch.cat(traj_segment, dim=0)  # (n_frames, 8)
 
             len_segment = len(traj_segment)
