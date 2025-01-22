@@ -39,6 +39,10 @@ class MotionVQVAEDataset(Dataset):
         self.chunk_size = chunk_size
         self.n_chunk_per_traj = n_chunk_per_traj
 
+        # about load content settings
+        self.load_quaternion = load_quaternion
+        self.load_proprioception = load_proprioception
+
         # load data
         self.tasks = os.listdir(pjoin(data_dir, split))
         self.all_demos_ids = []
@@ -60,9 +64,6 @@ class MotionVQVAEDataset(Dataset):
                 action_traj, descriptions = self.load_obs_traj(task, var, eps, load_observations)
                 self.data.append((action_traj, descriptions, task, var, eps))
         print(f"{split} data loaded, total number of demos: {len(self.all_demos_ids)}")
-
-        self.load_quaternion = load_quaternion
-        self.load_proprioception = load_proprioception
 
     def __len__(self):
         return len(self.all_demos_ids)
