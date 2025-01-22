@@ -339,13 +339,9 @@ class RLBenchEnv:
         action = np.concatenate([obs.gripper_pose, [obs.gripper_open]])
 
         # fetch proprioception
-        if obs.joint_positions is not None and obs.joint_velocities is not None and obs.gripper_joint_positions is not None:
-            proprioception = np.concatenate([
-                obs.joint_positions, obs.joint_velocities, obs.gripper_joint_positions
-            ])  # len 7 + 7 + 2 = 16
-            print(f'Complete!')
-        else:
-            proprioception = np.zeros(16)
+        proprioception = np.concatenate([
+            obs.joint_positions, obs.joint_velocities, obs.gripper_joint_positions
+        ])  # len 7 + 7 + 2 = 16
 
         return state_dict, torch.from_numpy(action).float(), torch.from_numpy(proprioception).float()
 
@@ -815,11 +811,11 @@ class RLBenchEnv:
             right_shoulder_camera=kwargs.get("right_shoulder", unused_cams),
             wrist_camera=kwargs.get("wrist", unused_cams),
             overhead_camera=kwargs.get("overhead", unused_cams),
-            joint_forces=False,
-            joint_positions=False,
+            joint_forces=True,
+            joint_positions=True,
             joint_velocities=True,
             task_low_dim_state=False,
-            gripper_touch_forces=False,
+            gripper_touch_forces=True,
             gripper_pose=True,
             gripper_open=True,
             gripper_matrix=True,
