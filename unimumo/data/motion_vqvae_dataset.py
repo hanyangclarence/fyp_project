@@ -21,9 +21,10 @@ class MotionVQVAEDataset(Dataset):
             preload_data: bool = False,
             cameras: Tuple[str, ...] = ("left_shoulder", "right_shoulder", "wrist", "front"),
             image_size: str = "256,256",
-            load_observations: bool = False,
-            load_quaternion: bool = True,
-            load_proprioception: bool = True,
+            load_observations: bool = False,  # Whether to load rgb/depth/pc for each timestep
+            load_quaternion: bool = True,  # Whether to load quaternion or euler angles as the rotation representation of the gripper
+            load_proprioception: bool = True,  # Whether to load proprioception data, concatenated with the gripper pose
+            use_chunk: bool = True,  # Whether to load trajectory in chunks (segmented by key frames)
             chunk_size: int = 4,  # number of frames in a chunk
             n_chunk_per_traj: int = 2,  # number of chunks in a trajectory
     ):
@@ -36,6 +37,7 @@ class MotionVQVAEDataset(Dataset):
             apply_cameras=cameras,
         )
 
+        self.use_chunk = use_chunk
         self.chunk_size = chunk_size
         self.n_chunk_per_traj = n_chunk_per_traj
 
@@ -76,10 +78,16 @@ class MotionVQVAEDataset(Dataset):
             action_traj, descriptions = self.load_obs_traj(task, var, eps, self.load_observations)
         len_traj = len(action_traj)
 
-        # sample a random chunk
-        start_idx = random.randint(0, len_traj // self.chunk_size - self.n_chunk_per_traj) * self.chunk_size
-        end_idx = start_idx + self.chunk_size * self.n_chunk_per_traj
-        traj = action_traj[start_idx:end_idx].float()  # (T, 8), also convert to float32 tensor
+        if self.use_chunk:
+            # sample a random chunk
+            start_idx = random.randint(0, len_traj // self.chunk_size - self.n_chunk_per_traj) * self.chunk_size
+            end_idx = start_idx + self.chunk_size * self.n_chunk_per_traj
+            traj = action_traj[start_idx:end_idx].float()  # (T, 8), also convert to float32 tensor
+        else:
+            # directly sample a trajectory
+            start_idx = random.randint(0, len_traj - self.n_chunk_per_traj * self.chunk_size)
+            end_idx = start_idx + self.n_chunk_per_traj * self.chunk_size
+            traj = action_traj[start_idx:end_idx].float()  # (T, 8)
 
         # TODO: data augmentation?
 
@@ -130,9 +138,11 @@ class MotionVQVAEDataset(Dataset):
 
             traj_segment = torch.cat(traj_segment, dim=0)  # (n_frames, 8)
 
-            len_segment = len(traj_segment)
-            target_interp_length = len_segment + self.chunk_size - len_segment % self.chunk_size
-            traj_segment = interpolate_trajectory(traj_segment, target_interp_length)
+            if self.use_chunk:
+                # if load trajectory in chunks, interpolate the length of each segment to a multiple of chunk_size
+                len_segment = len(traj_segment)
+                target_interp_length = len_segment + self.chunk_size - len_segment % self.chunk_size
+                traj_segment = interpolate_trajectory(traj_segment, target_interp_length)
 
             action_traj.append(traj_segment)
 

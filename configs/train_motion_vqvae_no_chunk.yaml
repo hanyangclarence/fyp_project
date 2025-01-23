@@ -1,12 +1,13 @@
-# This config loads proprioception data together with gripper data as the trajectory for the VQVAE to reconstruct
+# this config inherits from euler
+# This config loads trajectory data without chunking, just randomly sampled trajectory of length 16
 
 model:
   target: unimumo.models.motion_vqvae.MotionVQVAE
   params:
     monitor: "val_loss"
-    mean_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/mean_proprior.npy"
-    std_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/std_proprior.npy"
-    motion_mode: "proprior"  # "default" or "euler" or "proprior"
+    mean_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/mean_euler.npy"
+    std_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/std_euler.npy"
+    motion_mode: "euler"  # "default" or "euler"
     normalize_motion: True
     loss_config:
       target: unimumo.modules.loss.MotionVqVaeLoss
@@ -14,10 +15,10 @@ model:
         lambda_commit: 0.02
         lambda_recon: 1.0
     encoder_decoder_config:
-      input_dim: 24
+      input_dim: 7
       output_dim: 128
-      emb_dim_encoder: [24, 32, 48, 64, 128]
-      emb_dim_decoder: [128, 64, 48, 32, 24]
+      emb_dim_encoder: [7, 16, 32, 64, 128]
+      emb_dim_decoder: [128, 64, 32, 16, 7]
       dilation_growth_rate: 2
       depth_per_res_block: 6
       activation: 'relu'
@@ -55,8 +56,8 @@ data:
         load_observations: False
         chunk_size: 4
         n_chunk_per_traj: 4
-        load_quaternion: True
-        load_proprioception: True
+        load_quaternion: False
+        use_chunk: False
 
     validation:
       target: unimumo.data.motion_vqvae_dataset.MotionVQVAEDataset
@@ -67,8 +68,8 @@ data:
         load_observations: False
         chunk_size: 4
         n_chunk_per_traj: 4
-        load_quaternion: True
-        load_proprioception: True
+        load_quaternion: False
+        use_chunk: False
 
 
 lightning:
