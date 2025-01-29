@@ -1,0 +1,7 @@
+default:
+batch size: 32
+chunk_size: 4
+n_chunk_per_traj: 4
+lambda_commit: 0.02
+
+

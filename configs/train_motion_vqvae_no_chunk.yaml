@@ -91,5 +91,5 @@ lightning:
   trainer:
     benchmark: True
     devices: 1
-    num_nodes: 1
+    num_nodes: 4
     strategy: ddp
