@@ -27,12 +27,14 @@ class TrajectoryLogger(Callback):
             num_videos: int = 1,
             rlb_config: dict = None,
             save_freq_epoch: int = 10,
+            save_frame_flash: bool = True
     ):
         super().__init__()
         self.save_video = save_video
         self.num_videos = num_videos
         self.rlb_config = rlb_config
         self.save_freq_epoch = save_freq_epoch
+        self.save_frame_flash = save_frame_flash
 
         self.env = None
 
@@ -123,13 +125,13 @@ class TrajectoryLogger(Callback):
             os.makedirs(save_dir, exist_ok=True)
 
             try:
-                self.run_single_trajectory(gt_traj, task, task_str, var, eps)
+                self.run_single_trajectory(gt_traj, task, task_str, var, eps, tr)
                 tr.save(pjoin(save_dir, f"e{pl_module.current_epoch}_b{b}_var{var}_eps{eps}_gt.mp4"))
             except Exception as e:
                 print(f"Error running GT trajectory: {e}")
 
             try:
-                self.run_single_trajectory(recon_traj, task, task_str, var, eps)
+                self.run_single_trajectory(recon_traj, task, task_str, var, eps, tr)
                 tr.save(pjoin(save_dir, f"e{pl_module.current_epoch}_b{b}_var{var}_eps{eps}_recon.mp4"))
             except Exception as e:
                 print(f"Error running recon trajectory: {e}")
@@ -149,6 +151,7 @@ class TrajectoryLogger(Callback):
             task_str: str,
             var: int,
             eps: int,
+            recorder: TaskRecorder
     ):
         try:
             gt_demo = self.env.get_demo(task_str, var, episode_index=eps, image_paths=True)[0]
@@ -163,6 +166,9 @@ class TrajectoryLogger(Callback):
         trajectory[:, -1] = trajectory[:, -1].round()  # the last dim is the gripper state
         for action in tqdm(trajectory, desc="Executing and visualizing trajectory"):
             _ = move(action, collision_checking=False)
+
+            if self.save_frame_flash:
+                recorder.save_blank_frame()
 
 
 

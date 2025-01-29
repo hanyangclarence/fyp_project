@@ -62,7 +62,11 @@ class TaskRecorder(object):
         for cam_name, cam_motion in self._cams_motion.items():
             cam_motion.step()
             self._snaps[cam_name].append(
-                (cam_motion.cam.capture_rgb() * 255.).astype(np.uint8))
+                (cam_motion.cam.capture_rgb() * 255.).astype(np.uint8))  # (480, 480, 3)
+
+    def save_blank_frame(self):
+        for cam_name, _ in self._cams_motion.items():
+            self._snaps[cam_name].append(np.ones((480, 480, 3), dtype=np.uint))
 
     def save(self, path):
         print('Converting to video ...')

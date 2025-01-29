@@ -23,7 +23,7 @@ class MotionVQVAEDataset(Dataset):
             image_size: str = "256,256",
             load_observations: bool = False,  # Whether to load rgb/depth/pc for each timestep
             load_quaternion: bool = True,  # Whether to load quaternion or euler angles as the rotation representation of the gripper
-            load_proprioception: bool = True,  # Whether to load proprioception data, concatenated with the gripper pose
+            load_proprioception: bool = False,  # Whether to load proprioception data, concatenated with the gripper pose
             use_chunk: bool = True,  # Whether to load trajectory in chunks (segmented by key frames)
             chunk_size: int = 4,  # number of frames in a chunk
             n_chunk_per_traj: int = 2,  # number of chunks in a trajectory
