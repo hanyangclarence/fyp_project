@@ -17,8 +17,8 @@ model:
     encoder_decoder_config:
       input_dim: 7
       output_dim: 256
-      emb_dim_encoder: [7, 16, 32, 64, 128, 256]
-      emb_dim_decoder: [256, 128, 64, 32, 16, 7]
+      emb_dim_encoder: [7, 24, 48, 128, 256]
+      emb_dim_decoder: [256, 128, 48, 24, 7]
       dilation_growth_rate: 2
       depth_per_res_block: 6
       activation: 'relu'
