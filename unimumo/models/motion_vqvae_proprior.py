@@ -104,7 +104,7 @@ class MotionVQVAE(pl.LightningModule):
         code = self.encode(trajectory)
         traj_recon = self.decode(code)
 
-        loss, loss_dict = self.loss(trajectory[:, :, 8], traj_recon, 0, split="val")
+        loss, loss_dict = self.loss(trajectory[:, :, :8], traj_recon, 0, split="val")
 
         self.log("val_loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
         self.log_dict(loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=False)
