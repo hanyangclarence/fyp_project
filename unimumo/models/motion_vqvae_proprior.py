@@ -39,7 +39,7 @@ class MotionVQVAE(pl.LightningModule):
         self.optimizer_config = optimizer_config
 
         # load mean and std
-        self.input_dim = encoder_decoder_config['input_dim']
+        self.input_dim = encoder_config['input_dim']
         if normalize_motion:
             self.mean = torch.from_numpy(np.load(mean_dir)).float()
             self.std = torch.from_numpy(np.load(std_dir)).float()
