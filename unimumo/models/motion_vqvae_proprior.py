@@ -16,7 +16,8 @@ from unimumo.modules.motion_vqvae_module import Encoder, Decoder
 class MotionVQVAE(pl.LightningModule):
     def __init__(
         self,
-        encoder_decoder_config: dict,
+        encoder_config: dict,
+        decoder_config: dict,
         quantizer_config: dict,
         loss_config: dict,
         optimizer_config: dict,
@@ -28,8 +29,8 @@ class MotionVQVAE(pl.LightningModule):
     ):
         super().__init__()
 
-        self.motion_encoder = Encoder(**encoder_decoder_config)
-        self.motion_decoder = Decoder(**encoder_decoder_config)
+        self.motion_encoder = instantiate_from_config(encoder_config)
+        self.motion_decoder = instantiate_from_config(decoder_config)
 
         self.quantizer = ResidualVectorQuantizer(**quantizer_config)
 
