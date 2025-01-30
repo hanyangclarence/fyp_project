@@ -1,7 +1,7 @@
 # This config loads proprioception data together with gripper data as the trajectory for the VQVAE to reconstruct
 
 model:
-  target: unimumo.models.motion_vqvae.MotionVQVAE
+  target: unimumo.models.motion_vqvae_proprior.MotionVQVAE
   params:
     monitor: "val_loss"
     mean_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/mean_proprior.npy"
@@ -17,7 +17,7 @@ model:
       input_dim: 24
       output_dim: 128
       emb_dim_encoder: [24, 32, 48, 64, 128]
-      emb_dim_decoder: [128, 64, 48, 32, 24]
+      emb_dim_decoder: [128, 64, 32, 16, 8]
       dilation_growth_rate: 2
       depth_per_res_block: 6
       activation: 'relu'
@@ -54,8 +54,9 @@ data:
         preload_data: False
         load_observations: False
         chunk_size: 4
-        n_chunk_per_traj: 4
+        n_chunk_per_traj: 2
         load_quaternion: True
+        use_chunk: False
         load_proprioception: True
 
     validation:
@@ -68,6 +69,7 @@ data:
         chunk_size: 4
         n_chunk_per_traj: 4
         load_quaternion: True
+        use_chunk: False
         load_proprioception: True
 
 
