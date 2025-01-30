@@ -12,7 +12,7 @@ model:
     loss_config:
       target: unimumo.modules.loss.MotionVqVaeLoss
       params:
-        lambda_commit: 0.02
+        lambda_commit: 0.002
         lambda_recon: 1.0
     encoder_decoder_config:
       input_dim: 7
