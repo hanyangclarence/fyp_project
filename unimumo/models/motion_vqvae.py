@@ -143,6 +143,7 @@ class MotionVQVAE(pl.LightningModule):
         if self.logger is not None:
             writer = self.logger.experiment
             writer.add_histogram("code_usage/usage_hist", self.codebook_usage, global_step=self.current_epoch)
+            print(f"Codebook usage histogram logged at epoch {self.current_epoch}")
 
             # reset the codebook usage statistics
             self.codebook_usage = np.zeros(self.quantizer.bins, dtype=np.int64)
