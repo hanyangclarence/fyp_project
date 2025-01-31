@@ -5,5 +5,5 @@ n_chunk_per_traj: 4
 lambda_commit: 0.02
 
 
-# try lower lambda_commit
+# try lower lambda_commit  491569 2025-01-30T20-32-55_train_motion_vqvae_no_chunk/
 lambda_commit: 0.002

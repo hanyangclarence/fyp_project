@@ -54,6 +54,8 @@ data:
         chunk_size: 4
         n_chunk_per_traj: 4
         load_quaternion: True
+        use_chunk: False
+        load_proprioception: False
 
     validation:
       target: unimumo.data.motion_vqvae_dataset.MotionVQVAEDataset
@@ -65,6 +67,8 @@ data:
         chunk_size: 4
         n_chunk_per_traj: 4
         load_quaternion: True
+        use_chunk: False
+        load_proprioception: False
 
 
 lightning:
