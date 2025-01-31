@@ -89,12 +89,13 @@ class Encoder(nn.Module):
         input_dim=263,
         output_dim=16,
         emb_dim_encoder=(256, 192, 128, 64, 32, 16),
+        emb_dim_decoder=None,
         downsample=(0, 1, 0, 1, 0),
+        upsample=None,
         dilation_growth_rate=2,
         depth_per_res_block=6,
         activation='relu',
         norm=None,
-        **kwargs
     ):
         super().__init__()
         assert len(downsample) == len(emb_dim_encoder) - 1
@@ -137,13 +138,14 @@ class Decoder(nn.Module):
         self,
         input_dim=263,
         output_dim=16,
+        emb_dim_encoder=None,
         emb_dim_decoder=(16, 32, 64, 128, 192, 256),
+        downsample=None,
         upsample=(0, 1, 0, 1, 0),
         dilation_growth_rate=2,
         depth_per_res_block=6,
         activation='relu',
         norm=None,
-        **kwargs
     ):
         super().__init__()
         assert len(upsample) == len(emb_dim_decoder) - 1

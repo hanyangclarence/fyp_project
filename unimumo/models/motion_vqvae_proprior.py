@@ -10,7 +10,6 @@ import typing as tp
 
 from unimumo.util import instantiate_from_config, get_obj_from_str
 from unimumo.audio.audiocraft_.quantization.vq import ResidualVectorQuantizer
-from unimumo.modules.motion_vqvae_module import Encoder, Decoder
 
 
 class MotionVQVAE(pl.LightningModule):
@@ -44,6 +43,9 @@ class MotionVQVAE(pl.LightningModule):
             self.mean = torch.from_numpy(np.load(mean_dir)).float()
             self.std = torch.from_numpy(np.load(std_dir)).float()
             assert self.mean.shape == self.std.shape == (self.input_dim,), f"Expected shape {(self.input_dim,)}, got {self.mean.shape} or {self.std.shape}"
+
+            self.mean[3:8] = 0
+            self.std[3:8] = 1
         else:
             self.mean = torch.zeros(self.input_dim)
             self.std = torch.ones(self.input_dim)
@@ -54,6 +56,8 @@ class MotionVQVAE(pl.LightningModule):
 
         self.monitor = monitor
         self.motion_mode = motion_mode
+
+        self.codebook_usage = np.zeros(self.quantizer.bins, dtype=np.int64)
 
     def normalize(self, x: Tensor) -> Tensor:
         self.mean = self.mean.to(x.device)
@@ -108,7 +112,42 @@ class MotionVQVAE(pl.LightningModule):
 
         self.log("val_loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
         self.log_dict(loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=False)
+
+        # log perplexity
+        with torch.no_grad():
+            code_flat = code.view(-1)
+            unique_codes, counts = torch.unique(code_flat, return_counts=True)
+            usage = torch.zeros(self.quantizer.bins, dtype=torch.long, device=code.device)
+            usage[unique_codes] = counts
+            usage = usage.cpu().numpy()
+
+            # empirical probabilities
+            p = usage / usage.sum()  # shape (codebook_size,)
+
+            # perplexity
+            eps = 1e-10
+            perplexity = np.exp(-np.sum(p * np.log(p + eps)))
+
+            # Number of unique codes used
+            unique_codes_used = float((usage > 0).sum())
+
+            self.log("code_usage/unique_codes_used", unique_codes_used, on_step=True, on_epoch=False)
+            self.log("code_usage/perplexity", perplexity, on_step=True, on_epoch=False)
+
+            # add the usage to the codebook_usage statistics
+            self.codebook_usage += usage
+
         return loss
+
+    def on_validation_epoch_end(self):
+        # log the codebook usage statistics as histogram
+        if self.logger is not None:
+            writer = self.logger.experiment
+            writer.add_histogram("code_usage/usage_hist", self.codebook_usage, global_step=self.current_epoch)
+            print(f"Codebook usage histogram logged at epoch {self.current_epoch}")
+
+            # reset the codebook usage statistics
+            self.codebook_usage = np.zeros(self.quantizer.bins, dtype=np.int64)
 
     def configure_optimizers(self):
         # optimizer
