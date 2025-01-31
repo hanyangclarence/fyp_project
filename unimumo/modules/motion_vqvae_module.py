@@ -89,6 +89,7 @@ class Encoder(nn.Module):
         input_dim=263,
         output_dim=16,
         emb_dim_encoder=(256, 192, 128, 64, 32, 16),
+        downsample=(0, 1, 0, 1, 0),
         dilation_growth_rate=2,
         depth_per_res_block=6,
         activation='relu',
@@ -96,6 +97,7 @@ class Encoder(nn.Module):
         **kwargs
     ):
         super().__init__()
+        assert len(downsample) == len(emb_dim_encoder) - 1
 
         self.init_conv = nn.Sequential(
             nn.Conv1d(input_dim, emb_dim_encoder[0], 3, 1, 1),
@@ -113,8 +115,8 @@ class Encoder(nn.Module):
                 Resnet1D(out_channel, n_depth=depth_per_res_block, dilation_growth_rate=dilation_growth_rate,
                          activation=activation, norm=norm)
             )
-            if i % 2 == 0:
-                block.add_module("downsample", nn.MaxPool1d(2))
+            if downsample[i]:
+                block.add_module("downsample", nn.Conv1d(out_channel, out_channel, 4, 2, 1))
 
             blocks.append(block)
 
@@ -136,6 +138,7 @@ class Decoder(nn.Module):
         input_dim=263,
         output_dim=16,
         emb_dim_decoder=(16, 32, 64, 128, 192, 256),
+        upsample=(0, 1, 0, 1, 0),
         dilation_growth_rate=2,
         depth_per_res_block=6,
         activation='relu',
@@ -143,6 +146,7 @@ class Decoder(nn.Module):
         **kwargs
     ):
         super().__init__()
+        assert len(upsample) == len(emb_dim_decoder) - 1
 
         self.init_conv = nn.Sequential(
             nn.Conv1d(output_dim, emb_dim_decoder[0], 3, 1, 1),
@@ -159,8 +163,8 @@ class Decoder(nn.Module):
                          dilation_growth_rate, reverse_dilation=True, activation=activation, norm=norm),
                 nn.Conv1d(in_channel, out_channel, 3, 1, 1)
             )
-            if i % 2 == 0:
-                block.add_module("upsample", nn.Upsample(scale_factor=2))
+            if upsample[i]:
+                block.add_module("upsample", nn.ConvTranspose1d(out_channel, out_channel, 4, 2, 1))
 
             blocks.append(block)
         self.resnet_block = nn.Sequential(*blocks)
