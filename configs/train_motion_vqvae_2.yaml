@@ -13,19 +13,19 @@ model:
         lambda_recon: 1.0
     encoder_decoder_config:
       input_dim: 8
-      output_dim: 64
-      emb_dim_encoder: [8, 16, 32, 64]
-      downsample: [1, 0, 1]
-      emb_dim_decoder: [64, 32, 16, 8]
-      upsample: [1, 0, 1]
+      output_dim: 256
+      emb_dim_encoder: [8, 16, 32, 64, 128, 256]
+      downsample: [1, 0, 1, 0, 1]
+      emb_dim_decoder: [256, 128, 64, 32, 16, 8]
+      upsample: [1, 0, 1, 0, 1]
       dilation_growth_rate: 2
       depth_per_res_block: 6
       activation: 'relu'
     quantizer_config:
-      dimension: 64
+      dimension: 256
       n_q: 1
       q_dropout: False,
-      bins: 256
+      bins: 512
     optimizer_config:
       optimizer:
         target: AdamW
