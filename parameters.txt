@@ -7,4 +7,5 @@ lambda_commit: 0.02
 
 # try smaller model  train_motion_vqvae_2.yaml
 not good. indeed smaller model is not good.
-# try larger model train_motion_vqvae_2.yaml
+
+# try larger model from proprior config train_motion_vqvae_2.yaml

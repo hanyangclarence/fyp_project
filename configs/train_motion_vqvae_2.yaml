@@ -1,26 +1,36 @@
 model:
-  target: unimumo.models.motion_vqvae.MotionVQVAE
+  target: unimumo.models.motion_vqvae_proprior.MotionVQVAE
   params:
     monitor: "val_loss"
-    mean_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/mean_default.npy"
-    std_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/std_default.npy"
-    motion_mode: "default"  # "default" or "euler"
+    mean_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/mean_proprior.npy"
+    std_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/std_proprior.npy"
+    motion_mode: "proprior"  # "default" or "euler" or "proprior"
     normalize_motion: True
     loss_config:
       target: unimumo.modules.loss.MotionVqVaeLoss
       params:
         lambda_commit: 0.02
         lambda_recon: 1.0
-    encoder_decoder_config:
-      input_dim: 8
-      output_dim: 256
-      emb_dim_encoder: [8, 16, 32, 64, 128, 256]
-      downsample: [1, 0, 1, 0, 1]
-      emb_dim_decoder: [256, 128, 64, 32, 16, 8]
-      upsample: [1, 0, 1, 0, 1]
-      dilation_growth_rate: 2
-      depth_per_res_block: 6
-      activation: 'relu'
+    encoder_config:
+      target: unimumo.modules.motion_vqvae_module.Encoder
+      params:
+        input_dim: 24
+        output_dim: 256
+        emb_dim_encoder: [ 24, 16, 32, 64, 128, 256 ]
+        downsample: [ 1, 0, 1, 0, 1 ]
+        dilation_growth_rate: 2
+        depth_per_res_block: 6
+        activation: 'relu'
+    decoder_config:
+      target: unimumo.modules.motion_vqvae_module.Decoder
+      params:
+        input_dim: 8
+        output_dim: 256
+        emb_dim_decoder: [ 256, 128, 64, 32, 16, 8 ]
+        upsample: [ 1, 0, 1, 0, 1 ]
+        dilation_growth_rate: 2
+        depth_per_res_block: 6
+        activation: 'relu'
     quantizer_config:
       dimension: 256
       n_q: 1
@@ -36,7 +46,7 @@ model:
       lr_scheduler:
         target: CosineAnnealingLR
         params:
-          T_max: 2000  # not sure about this
+          T_max: 4000  # not sure about this
           eta_min: 1e-6
 
 
@@ -57,7 +67,7 @@ data:
         n_chunk_per_traj: 4
         load_quaternion: True
         use_chunk: False
-        load_proprioception: False
+        load_proprioception: True
 
     validation:
       target: unimumo.data.motion_vqvae_dataset.MotionVQVAEDataset
@@ -70,7 +80,7 @@ data:
         n_chunk_per_traj: 4
         load_quaternion: True
         use_chunk: False
-        load_proprioception: False
+        load_proprioception: True
 
 
 lightning:
