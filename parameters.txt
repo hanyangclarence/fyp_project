@@ -9,3 +9,6 @@ lambda_commit: 0.02
 not good. indeed smaller model is not good.
 
 # try larger model from proprior config train_motion_vqvae_2.yaml
+not good. reconstruction loss is very high
+
+# try larger model from proprior config, but only 4 times compression rate train_motion_vqvae_3.yaml
