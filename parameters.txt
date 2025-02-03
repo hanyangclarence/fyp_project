@@ -5,10 +5,8 @@ n_chunk_per_traj: 4
 lambda_commit: 0.02
 
 
-# try smaller model  train_motion_vqvae_2.yaml
-not good. indeed smaller model is not good.
-
-# try larger model from proprior config train_motion_vqvae_2.yaml
-not good. reconstruction loss is very high
+# train_motion_vqvae_2.yaml
+compression rate: 8
 
 # try larger model from proprior config, but only 4 times compression rate train_motion_vqvae_3.yaml
+this looks much better. Now further scale up the model
