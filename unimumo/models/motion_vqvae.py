@@ -56,6 +56,7 @@ class MotionVQVAE(pl.LightningModule):
         self.last_val_batch = None
 
         self.monitor = monitor
+        assert motion_mode in ["default", "proprior"], f"Invalid motion mode {motion_mode}"
         self.motion_mode = motion_mode
 
         self.codebook_usage = np.zeros(self.quantizer.bins, dtype=np.int64)

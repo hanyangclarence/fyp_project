@@ -7,6 +7,10 @@ lambda_commit: 0.02
 
 # train_motion_vqvae_2.yaml
 compression rate: 8
+scaled up already, but still not that good
 
 # try larger model from proprior config, but only 4 times compression rate train_motion_vqvae_3.yaml
 this looks much better. Now further scale up the model
+
+# train_motion_vqvae_4.yaml
+try encoder/decoder with transformer models.

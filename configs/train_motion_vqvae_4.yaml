@@ -12,27 +12,23 @@ model:
         lambda_commit: 0.02
         lambda_recon: 1.0
     encoder_config:
-      target: unimumo.modules.motion_vqvae_module.Encoder
+      target: unimumo.modules.transformer_encoder_decoder.Encoder
       params:
         input_dim: 24
-        output_dim: 512
-        emb_dim_encoder: [ 24, 48, 96, 192, 384, 512 ]
+        output_dim: 576
+        emb_dim_encoder: [ 24, 48, 96, 192, 384, 576 ]
+        nhead: [3, 6, 6, 12, 12, 18]
         downsample: [ 0, 1, 0, 1, 0 ]
-        dilation_growth_rate: 2
-        depth_per_res_block: 6
-        activation: 'relu'
     decoder_config:
       target: unimumo.modules.motion_vqvae_module.Decoder
       params:
-        input_dim: 8
-        output_dim: 512
-        emb_dim_decoder: [ 512, 384, 192, 96, 48, 24, 8 ]
-        upsample: [ 0, 1, 0, 1, 0, 0 ]
-        dilation_growth_rate: 2
-        depth_per_res_block: 6
-        activation: 'relu'
+        input_dim: 576
+        output_dim: 8
+        emb_dim_decoder: [ 576, 384, 192, 96, 48, 24 ]
+        nhead: [18, 12, 12, 6, 6, 3]
+        upsample: [ 0, 1, 0, 1, 0 ]
     quantizer_config:
-      dimension: 512
+      dimension: 576
       n_q: 1
       q_dropout: False,
       bins: 512

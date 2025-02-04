@@ -22,11 +22,11 @@ class MotionVQVAEDataset(Dataset):
             cameras: Tuple[str, ...] = ("left_shoulder", "right_shoulder", "wrist", "front"),
             image_size: str = "256,256",
             load_observations: bool = False,  # Whether to load rgb/depth/pc for each timestep
-            load_quaternion: bool = True,  # Whether to load quaternion or euler angles as the rotation representation of the gripper
             load_proprioception: bool = False,  # Whether to load proprioception data, concatenated with the gripper pose
             use_chunk: bool = True,  # Whether to load trajectory in chunks (segmented by key frames)
             chunk_size: int = 4,  # number of frames in a chunk
             n_chunk_per_traj: int = 2,  # number of chunks in a trajectory
+            data_augmentation: bool = False,
     ):
         # load RLBench environment
         self.env = RLBenchEnv(
@@ -42,8 +42,8 @@ class MotionVQVAEDataset(Dataset):
         self.n_chunk_per_traj = n_chunk_per_traj
 
         # about load content settings
-        self.load_quaternion = load_quaternion
         self.load_proprioception = load_proprioception
+        self.data_augmentation = data_augmentation
 
         # load data
         self.tasks = os.listdir(pjoin(data_dir, split))
@@ -89,7 +89,6 @@ class MotionVQVAEDataset(Dataset):
             end_idx = start_idx + self.n_chunk_per_traj * self.chunk_size
             traj = action_traj[start_idx:end_idx].float()  # (T, 8)
 
-        # TODO: data augmentation?
 
         # sample a random description
         desc = random.choice(descriptions)
@@ -121,15 +120,6 @@ class MotionVQVAEDataset(Dataset):
 
             for j in range(start_frame, end_frame):
                 _, action, proprioception = self.env.get_obs_action(demo[j])  # action: (8), proprioception: (16)
-
-                if not self.load_quaternion:
-                    trans = action[:3]
-                    rot_quat = action[3:7]
-                    gripper = action[7:]
-                    # convert quaternion to euler angles
-                    rot_angle = quaternion.as_euler_angles(quaternion.quaternion(rot_quat[0], rot_quat[1], rot_quat[2], rot_quat[3]))
-                    action = np.concatenate([trans, rot_angle, gripper], axis=0)
-                    action = torch.tensor(action, dtype=torch.float32)
 
                 if not self.load_proprioception:
                     traj_segment.append(action.unsqueeze(0))
