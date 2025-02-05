@@ -14,3 +14,9 @@ this looks much better. Now further scale up the model
 
 # train_motion_vqvae_4.yaml
 try encoder/decoder with transformer models.
+
+# train_motion_vqvae_5.yaml
+smaller transformer model than train_motion_vqvae_4.yaml
+
+# train_motion_vqvae_6.yaml
+same as train_motion_vqvae_4.yaml, just that load trajectory of size 8 instead of 16
