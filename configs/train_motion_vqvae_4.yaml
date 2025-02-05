@@ -20,7 +20,7 @@ model:
         nhead: [3, 6, 6, 12, 12, 18]
         downsample: [ 0, 1, 0, 1, 0 ]
     decoder_config:
-      target: unimumo.modules.motion_vqvae_module.Decoder
+      target: unimumo.modules.transformer_encoder_decoder.Decoder
       params:
         input_dim: 576
         output_dim: 8
