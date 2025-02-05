@@ -33,7 +33,6 @@ class ConvTransformerEncoderStage(nn.Module):
         )
 
     def forward(self, x):
-        print(f"{x.shape} => ", end="")
         x = self.conv(x)
         x = self.bn(x)
         x = self.activation(x)
@@ -42,7 +41,6 @@ class ConvTransformerEncoderStage(nn.Module):
         x = self.transformer(x)
         x = rearrange(x, 'b t c -> b c t')
 
-        print(x.shape)
         return x
 
 
@@ -61,7 +59,6 @@ class ConvTransformerDecoderStage(nn.Module):
         self.activation = nn.ReLU()
 
     def forward(self, x):
-        print(f"{x.shape} => ", end="")
         x = rearrange(x, 'b c t -> b t c')
         x = self.pos_encoder(x)
         x = self.transformer(x)
@@ -69,7 +66,6 @@ class ConvTransformerDecoderStage(nn.Module):
         x = self.conv(x)
         x = self.bn(x)
         x = self.activation(x)
-        print(x.shape)
         return x
 
 
