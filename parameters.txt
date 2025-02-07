@@ -9,14 +9,29 @@ lambda_commit: 0.02
 compression rate: 8
 scaled up already, but still not that good
 
-# try larger model from proprior config, but only 4 times compression rate train_motion_vqvae_3.yaml
+# train_motion_vqvae_3.yaml
+try larger model from proprior config, but only 4 times compression rate
 this looks much better. Now further scale up the model
+
+
 
 # train_motion_vqvae_4.yaml
 try encoder/decoder with transformer models.
 
 # train_motion_vqvae_5.yaml
 smaller transformer model than train_motion_vqvae_4.yaml
+not as good as 4
 
 # train_motion_vqvae_6.yaml
 same as train_motion_vqvae_4.yaml, just that load trajectory of size 8 instead of 16
+much worse than 4
+
+# currently 4, 5, 6 are all worse than 3 in terms of recon loss.
+
+
+
+
+
+# train_motion_vqvae_7.yaml
+source from train_motion_vqvae_3.yaml, but change to cross entropy loss
+
