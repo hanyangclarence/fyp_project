@@ -38,7 +38,7 @@ class LossWithCrossEntropy(nn.Module):
         super().__init__()
 
         self.recon_loss = nn.SmoothL1Loss(reduction="mean")
-        self.cross_entropy_loss = nn.CrossEntropyLoss()
+        self.cross_entropy_loss = nn.BCEWithLogitsLoss()
 
         self.lambda_recon = lambda_recon
         self.lambda_commit = lambda_commit
