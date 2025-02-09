@@ -63,8 +63,12 @@ class TrajectoryLogger(Callback):
         episodes = batch["episode"]
 
         with torch.no_grad():
-            code = pl_module.encode(trajectory)
-            trajectory_recon = pl_module.decode(code)
+            if "rgb" not in batch:
+                code = pl_module.encode(trajectory)
+                trajectory_recon = pl_module.decode(code)
+            else:
+                code = pl_module.encode(trajectory, batch["rgb"])
+                trajectory_recon = pl_module.decode(code, batch["rgb"])
 
         # initialize env
         self.env = RLBenchEnv(

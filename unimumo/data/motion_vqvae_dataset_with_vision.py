@@ -7,6 +7,8 @@ from typing import Tuple
 from tqdm import tqdm
 import quaternion
 import numpy as np
+from torchvision import transforms
+from PIL import Image
 
 from rlbench.demo import Demo
 
@@ -19,31 +21,43 @@ class MotionVQVAEDataset(Dataset):
             split: str,
             data_dir: str,
             preload_data: bool = False,
+            apply_rgb: bool = True,
+            apply_depth: bool = False,
+            apply_pc: bool = False,
             cameras: Tuple[str, ...] = ("left_shoulder", "right_shoulder", "wrist", "front"),
             image_size: str = "256,256",
-            load_observations: bool = False,  # Whether to load rgb/depth/pc for each timestep
             load_proprioception: bool = False,  # Whether to load proprioception data, concatenated with the gripper pose
-            use_chunk: bool = True,  # Whether to load trajectory in chunks (segmented by key frames)
+            use_chunk: bool = False,  # Whether to load trajectory in chunks (segmented by key frames)
             chunk_size: int = 4,  # number of frames in a chunk
             n_chunk_per_traj: int = 2,  # number of chunks in a trajectory
-            data_augmentation: bool = False,
+            compression_rate: int = 4,  # compression rate in time dimension
     ):
         # load RLBench environment
         self.env = RLBenchEnv(
             data_path=pjoin(data_dir, split),
             image_size=[int(x) for x in image_size.split(",")],
-            apply_rgb=True,
-            apply_pc=True,
+            apply_rgb=apply_rgb,
+            apply_pc=apply_pc,
+            apply_depth=apply_depth,
             apply_cameras=cameras,
         )
 
-        self.use_chunk = use_chunk
+        self.use_chunk = use_chunk  # TODO: when use_chunk is true, the interpolation for images are not implemented
         self.chunk_size = chunk_size
         self.n_chunk_per_traj = n_chunk_per_traj
+        self.compression_rate = compression_rate
 
         # about load content settings
         self.load_proprioception = load_proprioception
-        self.data_augmentation = data_augmentation
+        self.apply_rgb = apply_rgb
+        self.apply_depth = apply_depth
+        self.apply_pc = apply_pc
+
+        self.rgb_transform = transforms.Compose([
+            transforms.ToTensor(),  # converts to float32 and scales to [0,1]
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
+        ])
 
         # load data
         self.tasks = os.listdir(pjoin(data_dir, split))
@@ -60,11 +74,10 @@ class MotionVQVAEDataset(Dataset):
 
         self.data = []
         self.preload_data = preload_data
-        self.load_observations = load_observations
         if preload_data:
             for task, var, eps in tqdm(self.all_demos_ids, desc=f"Loading {split} data"):
-                action_traj, descriptions = self.load_obs_traj(task, var, eps, load_observations)
-                self.data.append((action_traj, descriptions, task, var, eps))
+                action_traj, descriptions, observations = self.load_obs_traj(task, var, eps)
+                self.data.append((action_traj, descriptions, observations, task, var, eps))
         print(f"{split} data loaded, total number of demos: {len(self.all_demos_ids)}")
 
     def __len__(self):
@@ -72,10 +85,10 @@ class MotionVQVAEDataset(Dataset):
 
     def __getitem__(self, idx):
         if self.preload_data:
-            action_traj, descriptions, task, var, eps = self.data[idx]
+            action_traj, descriptions, observations, task, var, eps = self.data[idx]
         else:
             task, var, eps = self.all_demos_ids[idx]
-            action_traj, descriptions = self.load_obs_traj(task, var, eps, self.load_observations)
+            action_traj, descriptions, observations = self.load_obs_traj(task, var, eps)
         len_traj = len(action_traj)
 
         if self.use_chunk:
@@ -93,7 +106,7 @@ class MotionVQVAEDataset(Dataset):
         # sample a random description
         desc = random.choice(descriptions)
 
-        return  {
+        data_dict = {
             "trajectory": traj,  # (T, 8)
             "description": desc,  # str
             "task_str": task,  # str
@@ -101,16 +114,32 @@ class MotionVQVAEDataset(Dataset):
             "episode": eps,  # int
         }
 
+        if self.apply_rgb:
+            data_dict["rgb"] = torch.stack(
+                observations["rgb"][start_idx:end_idx:self.compression_rate]
+            )  # (T', N, 3, H, W)
+        if self.apply_depth:
+            data_dict["depth"] = torch.stack(
+                observations["depth"][start_idx:end_idx:self.compression_rate]
+            )  # (T', N, 1, H, W)
+        if self.apply_pc:
+            data_dict["pc"] = torch.stack(
+                observations["pc"][start_idx:end_idx:self.compression_rate]
+            )  # (T', N, 3, H, W)
 
-    def load_obs_traj(self, task: str, variation: int, episode: int, load_observations: bool = False):
+        return data_dict
+
+
+    def load_obs_traj(self, task: str, variation: int, episode: int):
         # load stored demo
-        demo: Demo = self.env.get_demo(task, variation, episode, image_paths= not load_observations)[0]
+        demo: Demo = self.env.get_demo(task, variation, episode)[0]
 
         # get keypoints
         key_frame_ids = keypoint_discovery(demo)  # List[int]
         key_frame_ids.insert(0, 0)
 
         action_traj = []
+        observations = {"rgb": [], "depth": [], "pc": []}
 
         # process the segment between each pair of key frames: interpolate their length to a multiple of chunk_size
         for i in range(len(key_frame_ids) - 1):
@@ -119,12 +148,26 @@ class MotionVQVAEDataset(Dataset):
             end_frame = key_frame_ids[i + 1]
 
             for j in range(start_frame, end_frame):
-                _, action, proprioception = self.env.get_obs_action(demo[j])  # action: (8), proprioception: (16)
+                obs_dict, action, proprioception = self.env.get_obs_action(demo[j])  # action: (8), proprioception: (16)
 
                 if not self.load_proprioception:
                     traj_segment.append(action.unsqueeze(0))
                 else:
                     traj_segment.append(torch.cat([action.unsqueeze(0), proprioception.unsqueeze(0)], dim=1))
+
+                # preprocess observation data
+                if self.apply_rgb:
+                    observations["rgb"].append(
+                        torch.stack([self.preprocess_rgb(rgb) for rgb in obs_dict["rgb"]])  # (N, 3, H, W)
+                    )
+                if self.apply_depth:
+                    observations["depth"].append(
+                        torch.stack([self.preprocess_depth(depth) for depth in obs_dict["depth"]])  # (N, 1, H, W)
+                    )
+                if self.apply_pc:
+                    observations["pc"].append(
+                        torch.stack([self.preprocess_pc(pc) for pc in obs_dict["pc"]])  # (N, 3, H, W)
+                    )
 
             traj_segment = torch.cat(traj_segment, dim=0)  # (n_frames, 8)
 
@@ -142,16 +185,30 @@ class MotionVQVAEDataset(Dataset):
 
         descriptions = demo[0].misc['descriptions']
 
-        return action_traj, descriptions
+        return action_traj, descriptions, observations
+
+    def preprocess_rgb(self, rgb: np.ndarray) -> torch.Tensor:
+        return self.rgb_transform(rgb)  # (3, H, W)
+
+    def preprocess_depth(self, depth: np.ndarray) -> torch.Tensor:
+        # Convert to float32
+        depth = depth.astype(np.float32)
+
+        # TODO: normalize
+
+        depth = torch.from_numpy(depth).unsqueeze(0)  # (1, H, W)
+        return depth
+
+    def preprocess_pc(self, pc: np.ndarray) -> torch.Tensor:
+        # Convert to float32
+        pc = pc.astype(np.float32)
+
+        # TODO: normalize
+
+        pc = torch.from_numpy(pc).permute(2, 0, 1)  # (3, H, W)
+        return pc
 
 
-if __name__ == "__main__":
-    data_dir = "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
-    dataset = MotionVQVAEDataset("val", data_dir)
-
-    for i in range(len(dataset)):
-        sample = dataset.__getitem__(i)
-        print(sample)
 
 
 

@@ -136,6 +136,12 @@ def data_collate(batch):
         adapted_batch["variation"] = [b['variation'] for b in notnone_batches]
     if all(["episode" in b.keys() for b in notnone_batches]):
         adapted_batch["episode"] = [b['episode'] for b in notnone_batches]
+    if all(["rgb" in b.keys() for b in notnone_batches]):
+        adapted_batch["rgb"] = torch.stack([b['rgb'] for b in notnone_batches])  # (B, T', N, 3, H, W)
+    if all(["depth" in b.keys() for b in notnone_batches]):
+        adapted_batch["depth"] = torch.stack([b['depth'] for b in notnone_batches])  # (B, T', N, 1, H, W)
+    if all(["pc" in b.keys() for b in notnone_batches]):
+        adapted_batch["pc"] = torch.stack([b['pc'] for b in notnone_batches])  # (B, T', N, 3, H, W)
 
     return adapted_batch
 

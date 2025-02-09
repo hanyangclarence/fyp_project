@@ -1,5 +1,5 @@
 model:
-  target: unimumo.models.motion_vqvae_proprior.MotionVQVAE
+  target: unimumo.models.motion_vqvae_with_vision.MotionVQVAE
   params:
     monitor: "val_loss"
     mean_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/mean_proprior.npy"
@@ -32,6 +32,20 @@ model:
         dilation_growth_rate: 2
         depth_per_res_block: 6
         activation: 'relu'
+    fusor_config:
+      target: unimumo.modules.motion_vqvae_module.Encoder
+      params:
+        input_dim: 1024  # output_dim of encoder and decoder plus 512 (latent dim of resnet18)
+        output_dim: 512
+        emb_dim_encoder: [ 1024, 768, 512 ]
+        downsample: [ 0, 0 ]
+        dilation_growth_rate: 2
+        depth_per_res_block: 6
+        activation: 'relu'
+    vision_encoder_config:
+      name: "resnet18"
+      n_cameras: 2
+      encoder_dim: 512
     quantizer_config:
       dimension: 512
       n_q: 1
@@ -54,30 +68,40 @@ model:
 data:
   target: train.DataModuleFromConfig
   params:
-    batch_size: 256
+    batch_size: 64
     wrap: True
     num_workers: 4
     train:
-      target: unimumo.data.motion_vqvae_dataset.MotionVQVAEDataset
+      target: unimumo.data.motion_vqvae_dataset_with_vision.MotionVQVAEDataset
       params:
         split: "train"
         data_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
         preload_data: True
-        load_observations: False
+        apply_rgb: True
+        apply_depth: False
+        apply_pc: False
+        cameras: [ "front", "wrist" ]
+        image_size: "224,224"
         chunk_size: 4
         n_chunk_per_traj: 4
+        compression_rate: 4
         use_chunk: False
         load_proprioception: True
 
     validation:
-      target: unimumo.data.motion_vqvae_dataset.MotionVQVAEDataset
+      target: unimumo.data.motion_vqvae_dataset_with_vision.MotionVQVAEDataset
       params:
         split: "val"
         data_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
         preload_data: True
-        load_observations: False
+        apply_rgb: True
+        apply_depth: False
+        apply_pc: False
+        cameras: [ "front", "wrist" ]
+        image_size: "224,224"
         chunk_size: 4
         n_chunk_per_traj: 4
+        compression_rate: 4
         use_chunk: False
         load_proprioception: True
 
@@ -89,12 +113,12 @@ lightning:
       params:
         save_video: True
         num_videos: 1
-        save_freq_epoch: 400
+        save_freq_epoch: 200
         rlb_config:
           data_path: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
-          image_size: "256,256"
+          image_size: "224,224"
           apply_rgb: True
-          apply_pc: True
+          apply_pc: False
 
   trainer:
     benchmark: True
