@@ -46,3 +46,15 @@ gripper_weight: 0.5
 
 # train_motion_vqvae_10.yaml
 add vision information
+really cannot train
+
+
+
+# train_motion_vqvae_11.yaml
+try larger codebook of size 1024
+
+# train_motion_vqvae_12.yaml
+try larger codebook of size 1536
+
+# train_motion_vqvae_13.yaml
+try larger codebook of size 2048
