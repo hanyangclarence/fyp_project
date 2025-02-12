@@ -12,6 +12,9 @@ from rlbench.demo import Demo
 
 from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, keypoint_discovery, interpolate_trajectory
 
+MIN_DELTA_TRANS = 0.01
+MIN_DELTA_ROT = 0.1
+
 
 class MotionVQVAEDataset(Dataset):
     def __init__(
@@ -26,7 +29,7 @@ class MotionVQVAEDataset(Dataset):
             use_chunk: bool = True,  # Whether to load trajectory in chunks (segmented by key frames)
             chunk_size: int = 4,  # number of frames in a chunk
             n_chunk_per_traj: int = 2,  # number of chunks in a trajectory
-            data_augmentation: bool = False,
+            load_sparce: bool = False,  # Whether to load sparse trajectory
     ):
         # load RLBench environment
         self.env = RLBenchEnv(
@@ -44,6 +47,7 @@ class MotionVQVAEDataset(Dataset):
         # about load content settings
         self.load_proprioception = load_proprioception
         self.data_augmentation = data_augmentation
+        self.load_sparce = load_sparce
 
         # load data
         self.split = split
@@ -131,16 +135,18 @@ class MotionVQVAEDataset(Dataset):
             for j in range(start_frame, end_frame):
                 _, action, proprioception = self.env.get_obs_action(demo[j])  # action: (8), proprioception: (16)
 
-                if len(traj_segment) == 0:
-                    delta_trans = 0
-                    delta_rot = 0
+                if len(traj_segment) == 0:  # always keep the first frame
+                    delta_trans = 999
+                    delta_rot = 999
                 else:
                     delta_trans = torch.norm(action[:3] - traj_segment[-1][0, :3])
                     r1 = R.from_quat(traj_segment[-1][0, 3:7])
                     r2 = R.from_quat(action[3:7])
                     relative_rot = r1.inv() * r2
                     delta_rot = relative_rot.magnitude()
-                print(f"{delta_trans:.4f}, {delta_rot:.4f}")
+                if delta_trans < MIN_DELTA_TRANS and delta_rot < MIN_DELTA_ROT:
+                    # skip the frame if the action is too small
+                    continue
 
                 if not self.load_proprioception:
                     traj_segment.append(action.unsqueeze(0))

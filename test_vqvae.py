@@ -79,7 +79,8 @@ if __name__ == '__main__':
         apply_pc=False,
         headless=True,
         apply_cameras=("front",),
-        collision_checking=False
+        collision_checking=False,
+        load_sparce=True
     )
     rlbench_env.env.launch()
 
