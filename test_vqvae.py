@@ -69,6 +69,7 @@ if __name__ == '__main__':
         preload_data=False,
         load_observations=config["data"]["params"]["validation"]["params"]["load_observations"],
         load_proprioception=config["data"]["params"]["validation"]["params"]["load_proprioception"],
+        load_sparce=True
     )
 
     # init simulation env
@@ -80,7 +81,6 @@ if __name__ == '__main__':
         headless=True,
         apply_cameras=("front",),
         collision_checking=False,
-        load_sparce=True
     )
     rlbench_env.env.launch()
 
