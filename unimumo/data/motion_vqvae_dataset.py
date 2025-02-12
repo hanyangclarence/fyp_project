@@ -7,7 +7,7 @@ from typing import Tuple
 from tqdm import tqdm
 import quaternion
 import numpy as np
-
+from scipy.spatial.transform import Rotation as R
 from rlbench.demo import Demo
 
 from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, keypoint_discovery, interpolate_trajectory
@@ -130,6 +130,17 @@ class MotionVQVAEDataset(Dataset):
 
             for j in range(start_frame, end_frame):
                 _, action, proprioception = self.env.get_obs_action(demo[j])  # action: (8), proprioception: (16)
+
+                if len(traj_segment) == 0:
+                    delta_trans = 0
+                    delta_rot = 0
+                else:
+                    delta_trans = torch.norm(action[:3] - traj_segment[-1][0, :3])
+                    r1 = R.from_quat(traj_segment[-1][0, 3:7])
+                    r2 = R.from_quat(action[3:7])
+                    relative_rot = r1.inv() * r2
+                    delta_rot = relative_rot.magnitude()
+                print(f"{delta_trans:.4f}, {delta_rot:.4f}")
 
                 if not self.load_proprioception:
                     traj_segment.append(action.unsqueeze(0))

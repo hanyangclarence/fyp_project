@@ -58,8 +58,8 @@ if __name__ == '__main__':
     # load model
     model: pl.LightningModule = instantiate_from_config(config["model"])
     assert os.path.exists(args.ckpt), f"ckpt file not found: {args.ckpt}"
-    state_dict = torch.load(args.ckpt, map_location="cpu")["state_dict"]
-    model.load_state_dict(state_dict)
+    # load weight
+    model.load_state_dict(torch.load(args.ckpt, map_location="cpu")["state_dict"])
     model = model.cuda().eval()
 
     # load dataset
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         print(f"Eval {i}/{len(dataset)}: pose_recon_loss={pose_recon_loss: .4f}, gripper_classification_loss={gripper_classification_loss: .4f}")
 
         # visualize
-        if i % args.vis_freq == 0:
+        if (i + 1) % args.vis_freq == 0:
             gt_traj = gt_traj.numpy()
             recon_traj = recon_traj.numpy()
             # process recon trajectory to make it feasible
@@ -128,14 +128,14 @@ if __name__ == '__main__':
             # setup video recorder
             # Add a global camera to the scene
             cam_placeholder = Dummy('cam_cinematic_placeholder')
-            cam_resolution = [480, 480]
+            cam_resolution = [240, 240]
             cam = VisionSensor.create(cam_resolution)
             cam.set_pose(cam_placeholder.get_pose())
             cam.set_parent(cam_placeholder)
 
             cam_motion = CircleCameraMotion(cam, Dummy('cam_cinematic_base'), 0.005)
             cams_motion = {"global": cam_motion}
-            tr = TaskRecorder(cams_motion, fps=15)
+            tr = TaskRecorder(cams_motion, fps=10)
 
             task._scene.register_step_callback(tr.take_snap)
 
