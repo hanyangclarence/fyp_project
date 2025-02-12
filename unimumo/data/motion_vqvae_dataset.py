@@ -46,6 +46,7 @@ class MotionVQVAEDataset(Dataset):
         self.data_augmentation = data_augmentation
 
         # load data
+        self.split = split
         self.tasks = os.listdir(pjoin(data_dir, split))
         self.all_demos_ids = []
         for task in self.tasks:
@@ -78,6 +79,15 @@ class MotionVQVAEDataset(Dataset):
             action_traj, descriptions = self.load_obs_traj(task, var, eps, self.load_observations)
         len_traj = len(action_traj)
 
+        if self.split == "test":
+            # for test set, directly return the trajectory and description
+            return {
+                "trajectory": action_traj,  # (T, 8)
+                "description": descriptions[0],  # str
+                "task_str": task,  # str
+                "variation": var,  # int
+                "episode": eps,  # int
+            }
         if self.use_chunk:
             # sample a random chunk
             start_idx = random.randint(0, len_traj // self.chunk_size - self.n_chunk_per_traj) * self.chunk_size
