@@ -119,8 +119,10 @@ if __name__ == '__main__':
             gt_traj = gt_traj.numpy()
             recon_traj = recon_traj.numpy()
             # process recon trajectory to make it feasible
+            gt_traj[:, -1] = (gt_traj[:, -1] > 0.5).astype(np.float32)
             recon_traj[:, -1] = (recon_traj[:, -1] > 0.5).astype(np.float32)
             # ensure recon_traj[:, 3:7] is unit quaternion
+            gt_traj[:, 3:7] /= np.linalg.norm(gt_traj[:, 3:7], axis=1, keepdims=True)
             recon_traj[:, 3:7] /= np.linalg.norm(recon_traj[:, 3:7], axis=1, keepdims=True)
 
             task = rlbench_env.env.get_task(task_file_to_task_class(task_str))
