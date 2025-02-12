@@ -60,7 +60,8 @@ if __name__ == '__main__':
     assert os.path.exists(args.ckpt), f"ckpt file not found: {args.ckpt}"
     # load weight
     model.load_state_dict(torch.load(args.ckpt, map_location="cpu")["state_dict"])
-    model = model.cuda().eval()
+    model = model.cuda()
+    model.eval()
 
     # load dataset
     dataset = MotionVQVAEDataset(
