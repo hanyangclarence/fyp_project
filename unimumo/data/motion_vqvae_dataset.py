@@ -46,7 +46,6 @@ class MotionVQVAEDataset(Dataset):
 
         # about load content settings
         self.load_proprioception = load_proprioception
-        self.data_augmentation = data_augmentation
         self.load_sparce = load_sparce
 
         # load data
