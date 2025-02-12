@@ -59,7 +59,8 @@ if __name__ == '__main__':
     # load model
     model: pl.LightningModule = instantiate_from_config(config["model"])
     assert os.path.exists(args.ckpt), f"ckpt file not found: {args.ckpt}"
-    model.load_from_checkpoint(args.ckpt)
+    state_dict = torch.load(args.ckpt, map_location="cpu")["state_dict"]
+    model.load_state_dict(state_dict)
     model = model.cuda().eval()
 
     # load dataset
@@ -169,6 +170,12 @@ if __name__ == '__main__':
                 ))
             except Exception as e:
                 print(f"Error running recon trajectory: {e}")
+
+    print(f"Average pose_recon_loss={np.mean(pose_recon_losses): .4f}, average gripper_classification_loss={np.mean(gripper_classification_losses): .4f}")
+    rlbench_env.env.shutdown()
+    # write losses to file
+    with open(os.path.join(save_dir, "losses.txt"), "w") as f:
+        f.write(f"Average pose_recon_loss={np.mean(pose_recon_losses): .4f}\nAverage gripper_classification_loss={np.mean(gripper_classification_losses): .4f}")
 
 
 
