@@ -82,7 +82,7 @@ class MotionVQVAEDataset(Dataset):
         if self.split == "test":
             # for test set, directly return the trajectory and description
             return {
-                "trajectory": action_traj,  # (T, 8)
+                "trajectory": action_traj.float(),  # (T, 8)
                 "description": descriptions[0],  # str
                 "task_str": task,  # str
                 "variation": var,  # int

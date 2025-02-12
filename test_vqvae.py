@@ -44,7 +44,6 @@ if __name__ == '__main__':
     parser.add_argument("--config", type=str, default="config/vqvae.yaml")
     parser.add_argument("--ckpt", type=str, default="")
     parser.add_argument("--dataset_path", type=str, default="/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw")
-    parser.add_argument("--preload_data", type=bool, default=True)
     parser.add_argument("--vis_freq", type=int, default=50)
     parser.add_argument("--save_dir", type=str, default="test_logs")
     args = parser.parse_args()
