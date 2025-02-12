@@ -67,7 +67,7 @@ if __name__ == '__main__':
     dataset = MotionVQVAEDataset(
         "test",
         args.dataset_path,
-        preload_data=args.preload_data,
+        preload_data=False,
         load_observations=config["data"]["params"]["validation"]["params"]["load_observations"],
         load_proprioception=config["data"]["params"]["validation"]["params"]["load_proprioception"],
     )
@@ -100,6 +100,7 @@ if __name__ == '__main__':
         with torch.no_grad():
             code = model.encode(gt_traj)
             recon_traj = model.decode(code)
+            print(f"GT shape: {gt_traj.shape}, recon shape: {recon_traj.shape}")
 
         if model.motion_mode == "proprior":
             gt_traj = gt_traj[:, :, :8]
