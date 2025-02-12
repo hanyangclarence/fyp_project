@@ -68,8 +68,8 @@ if __name__ == '__main__':
         "test",
         args.dataset_path,
         preload_data=args.preload_data,
-        load_observations=config["data"]["params"]["validation"]["load_observations"],
-        load_proprioception=config["data"]["params"]["validation"]["load_proprioception"],
+        load_observations=config["data"]["params"]["validation"]["params"]["load_observations"],
+        load_proprioception=config["data"]["params"]["validation"]["params"]["load_proprioception"],
     )
 
     # init simulation env
