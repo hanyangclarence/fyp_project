@@ -69,6 +69,7 @@ if __name__ == '__main__':
         preload_data=False,
         load_observations=config["data"]["params"]["validation"]["params"]["load_observations"],
         load_proprioception=config["data"]["params"]["validation"]["params"]["load_proprioception"],
+        use_chunk=config["data"]["params"]["validation"]["params"]["use_chunk"],
         load_sparce=True
     )
 
@@ -94,6 +95,12 @@ if __name__ == '__main__':
         task_str = batch["task_str"]
         variation = batch["variation"]
         episode = batch["episode"]
+
+        # pad the gt_traj to make it length divisible by 4
+        gt_traj_padded = torch.zeros((gt_traj.shape[0] + 4 - gt_traj.shape[0] % 4, gt_traj.shape[1]))
+        gt_traj_padded[:gt_traj.shape[0], :] = gt_traj
+        gt_traj_padded[gt_traj.shape[0]:, :] = gt_traj[-1]
+        gt_traj = gt_traj_padded
 
         # reconstruct
         gt_traj = gt_traj.unsqueeze(0).cuda()  # (1, T, D)
@@ -138,7 +145,7 @@ if __name__ == '__main__':
 
             cam_motion = CircleCameraMotion(cam, Dummy('cam_cinematic_base'), 0.005)
             cams_motion = {"global": cam_motion}
-            tr = TaskRecorder(cams_motion, fps=10)
+            tr = TaskRecorder(cams_motion, fps=20)
 
             task._scene.register_step_callback(tr.take_snap)
 
