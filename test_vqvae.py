@@ -157,6 +157,7 @@ if __name__ == '__main__':
                 ))
             except Exception as e:
                 print(f"Error running GT trajectory: {e}")
+                tr._snaps = {cam_name: [] for cam_name in self._cams_motion.keys()}
 
             try:
                 run_single_trajectory(
@@ -173,6 +174,7 @@ if __name__ == '__main__':
                 ))
             except Exception as e:
                 print(f"Error running recon trajectory: {e}")
+                tr._snaps = {cam_name: [] for cam_name in self._cams_motion.keys()}
 
     print(f"Average pose_recon_loss={np.mean(pose_recon_losses): .4f}, average gripper_classification_loss={np.mean(gripper_classification_losses): .4f}")
     rlbench_env.env.shutdown()
