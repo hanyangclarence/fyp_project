@@ -97,7 +97,7 @@ if __name__ == '__main__':
         episode = batch["episode"]
 
         # pad the gt_traj to make it length divisible by 4
-        gt_traj_padded = torch.zeros((gt_traj.shape[0] + 4 - gt_traj.shape[0] % 4, gt_traj.shape[1]))
+        gt_traj_padded = torch.zeros((gt_traj.shape[0] + (4 - gt_traj.shape[0] % 4) % 4, gt_traj.shape[1]))
         gt_traj_padded[:gt_traj.shape[0], :] = gt_traj
         gt_traj_padded[gt_traj.shape[0]:, :] = gt_traj[-1]
         gt_traj = gt_traj_padded
