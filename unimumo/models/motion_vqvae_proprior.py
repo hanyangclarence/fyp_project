@@ -110,9 +110,10 @@ class MotionVQVAE(pl.LightningModule):
 
         loss, loss_dict = self.loss(self.normalize(trajectory[:, :, :8]), self.normalize(traj_recon), 0, split="val")
 
-        print(f"!!!!!!!!!!!!!!!!!!!!!!!")
-        print(trajectory[0, :10, :3])
-        print(traj_recon[0, :10, :3])
+        if batch_idx == 0:
+            print(f"!!!!!!!!!!!!!!!!!!!!!!!")
+            print(trajectory[0, :10, :3])
+            print(traj_recon[0, :10, :3])
 
         self.log("val_loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
         self.log_dict(loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=False)
