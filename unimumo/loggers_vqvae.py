@@ -70,6 +70,10 @@ class TrajectoryLogger(Callback):
                 code = pl_module.encode(trajectory, batch["rgb"])
                 trajectory_recon = pl_module.decode(code, batch["rgb"])
 
+        print(f"!!!!!!!!!!!!!!!!!!!!!!!")
+        print(trajectory[0, :10, :3])
+        print(trajectory_recon[0, :10, :3])
+
         # initialize env
         self.env = RLBenchEnv(
             data_path=pjoin(self.rlb_config["data_path"], split),
