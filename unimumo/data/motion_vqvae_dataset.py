@@ -143,7 +143,7 @@ class MotionVQVAEDataset(Dataset):
                     r2 = R.from_quat(action[3:7])
                     relative_rot = r1.inv() * r2
                     delta_rot = relative_rot.magnitude()
-                if delta_trans < MIN_DELTA_TRANS and delta_rot < MIN_DELTA_ROT:
+                if self.load_sparce and delta_trans < MIN_DELTA_TRANS and delta_rot < MIN_DELTA_ROT:
                     # skip the frame if the action is too small
                     continue
 
