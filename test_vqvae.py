@@ -11,7 +11,7 @@ from tqdm import tqdm
 from pyrep.objects.dummy import Dummy
 from pyrep.objects.vision_sensor import VisionSensor
 
-from unimumo.util import instantiate_from_config
+from unimumo.util import instantiate_from_config, load_model_from_config
 from unimumo.data.motion_vqvae_dataset import MotionVQVAEDataset
 from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, Mover, task_file_to_task_class, traj_euler_to_quat
 from unimumo.rlbench.utils_with_recorder import TaskRecorder, StaticCameraMotion, CircleCameraMotion, AttachedCameraMotion
@@ -56,12 +56,8 @@ if __name__ == '__main__':
     os.makedirs(save_dir, exist_ok=True)
 
     # load model
-    model: pl.LightningModule = instantiate_from_config(config["model"])
-    assert os.path.exists(args.ckpt), f"ckpt file not found: {args.ckpt}"
-    # load weight
-    model.load_state_dict(torch.load(args.ckpt, map_location="cpu")["state_dict"])
-    model = model.cuda()
-    model.eval()
+    model = load_model_from_config(config, args.ckpt, verbose=True)
+    model.cuda()
 
     # load dataset
     dataset = MotionVQVAEDataset(
@@ -165,7 +161,7 @@ if __name__ == '__main__':
                 ))
             except Exception as e:
                 print(f"Error running GT trajectory: {e}")
-                tr._snaps = {cam_name: [] for cam_name in self._cams_motion.keys()}
+                tr._snaps = {cam_name: [] for cam_name in tr._cams_motion.keys()}
 
             try:
                 run_single_trajectory(
@@ -182,7 +178,7 @@ if __name__ == '__main__':
                 ))
             except Exception as e:
                 print(f"Error running recon trajectory: {e}")
-                tr._snaps = {cam_name: [] for cam_name in self._cams_motion.keys()}
+                tr._snaps = {cam_name: [] for cam_name in tr._cams_motion.keys()}
 
     print(f"Average pose_recon_loss={np.mean(pose_recon_losses): .4f}, average gripper_classification_loss={np.mean(gripper_classification_losses): .4f}")
     rlbench_env.env.shutdown()
