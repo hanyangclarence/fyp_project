@@ -58,3 +58,9 @@ try larger codebook of size 1536
 
 # train_motion_vqvae_13.yaml
 try larger codebook of size 2048
+
+
+
+# train_motion_vqvae_14.yaml
+from train_motion_vqvae_3.yaml
+load sparce trajectory
