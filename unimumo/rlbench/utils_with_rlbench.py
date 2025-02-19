@@ -14,6 +14,7 @@ import torch.nn.functional as F
 import einops
 from scipy.interpolate import CubicSpline, interp1d
 import quaternion
+from PIL import Image
 
 from rlbench.observation_config import ObservationConfig, CameraConfig
 from rlbench.environment import Environment
@@ -23,6 +24,7 @@ from rlbench.action_modes.gripper_action_modes import Discrete
 from rlbench.action_modes.arm_action_modes import EndEffectorPoseViaPlanning
 from rlbench.backend.exceptions import InvalidActionError
 from rlbench.demo import Demo
+from rlbench.utils import _resize_if_needed, image_to_float_array, DEPTH_SCALE
 from pyrep.errors import IKError, ConfigurationPathError
 from pyrep.const import RenderMode
 from pyrep.objects.dummy import Dummy
@@ -980,3 +982,35 @@ def traj_euler_to_quat(trajectory):
         )
 
     return np.concatenate(new_traj, axis=0)
+
+
+def load_rgb(rgb_path: str, cam_config):
+    return np.array(
+        _resize_if_needed(
+            Image.open(rgb_path), cam_config.image_size
+        )
+    )
+
+
+def load_depth(depth_path, cam_config):
+    # return unscaled depth
+    depth = image_to_float_array(
+        _resize_if_needed(
+            Image.open(depth_path), cam_config.image_size
+        ),
+        DEPTH_SCALE
+    )
+    return cam_config.depth_noise.apply(depth)
+
+
+def get_point_cloud(depth_m, extrinsic, intrinsic):
+    return VisionSensor.pointcloud_from_depth_and_camera_params(
+        depth_m,
+        extrinsic,
+        intrinsic,
+    )
+
+
+
+
+

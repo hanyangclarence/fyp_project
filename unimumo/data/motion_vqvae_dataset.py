@@ -134,7 +134,8 @@ class MotionVQVAEDataset(Dataset):
             for j in range(start_frame, end_frame):
                 _, action, proprioception = self.env.get_obs_action(demo[j])  # action: (8), proprioception: (16)
 
-                if len(traj_segment) == 0:  # always keep the first frame
+                if len(traj_segment) == 0 or i == len(key_frame_ids) - 2:
+                    # always keep the first frame and the last frame
                     delta_trans = 999
                     delta_rot = 999
                 else:

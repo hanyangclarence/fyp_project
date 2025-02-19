@@ -68,7 +68,7 @@ model:
 data:
   target: train.DataModuleFromConfig
   params:
-    batch_size: 32
+    batch_size: 64
     wrap: True
     num_workers: 4
     train:
@@ -85,8 +85,9 @@ data:
         chunk_size: 4
         n_chunk_per_traj: 4
         compression_rate: 4
-        use_chunk: False
+        use_chunk: True
         load_proprioception: True
+        load_sparce: True
 
     validation:
       target: unimumo.data.motion_vqvae_dataset_with_vision.MotionVQVAEDataset
@@ -102,8 +103,9 @@ data:
         chunk_size: 4
         n_chunk_per_traj: 4
         compression_rate: 4
-        use_chunk: False
+        use_chunk: True
         load_proprioception: True
+        load_sparce: True
 
 
 lightning:
@@ -113,7 +115,7 @@ lightning:
       params:
         save_video: True
         num_videos: 1
-        save_freq_epoch: 200
+        save_freq_epoch: 400
         rlb_config:
           data_path: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
           image_size: "224,224"
