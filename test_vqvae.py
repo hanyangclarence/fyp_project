@@ -24,18 +24,24 @@ def run_single_trajectory(
     task_str: str,
     var: int,
     eps: int,
-    recorder: TaskRecorder
+    recorder: TaskRecorder = None
 ):
     gt_demo = rlbench_env.get_demo(task_str, var, episode_index=eps, image_paths=True)[0]
 
     # reset scene
     _ = task.reset_to_demo(gt_demo)
     move = Mover(task, max_tries=1)
+    reward = 0.0
 
     trajectory[:, -1] = trajectory[:, -1].round()  # the last dim is the gripper state
     for action in tqdm(trajectory, desc="Executing and visualizing trajectory"):
-        _ = move(action, collision_checking=False)
-        recorder.save_blank_frame()
+        _, reward, _, _ = move(action, collision_checking=False)
+        if recorder is not None:
+            recorder.save_blank_frame()
+        if reward > 0.0:
+            break
+
+    return reward
 
 
 
@@ -46,6 +52,7 @@ if __name__ == '__main__':
     parser.add_argument("--dataset_path", type=str, default="/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw")
     parser.add_argument("--vis_freq", type=int, default=50)
     parser.add_argument("--save_dir", type=str, default="test_logs")
+    parser.add_argument("--cal_reward", action="store_true")
     args = parser.parse_args()
 
     # load config
@@ -60,6 +67,8 @@ if __name__ == '__main__':
     model.cuda()
 
     # load dataset
+    chunk_size = config["data"]["params"]["validation"]["params"]["chunk_size"]
+    n_chunk_per_traj = config["data"]["params"]["validation"]["params"]["n_chunk_per_traj"]
     dataset = MotionVQVAEDataset(
         "test",
         args.dataset_path,
@@ -67,7 +76,9 @@ if __name__ == '__main__':
         load_observations=config["data"]["params"]["validation"]["params"]["load_observations"],
         load_proprioception=config["data"]["params"]["validation"]["params"]["load_proprioception"],
         use_chunk=config["data"]["params"]["validation"]["params"]["use_chunk"],
-        load_sparce=True
+        chunk_size=chunk_size,
+        n_chunk_per_traj=n_chunk_per_traj,
+        load_sparce=config["data"]["params"]["validation"]["params"]["load_sparce"],
     )
 
     # init simulation env
@@ -85,6 +96,7 @@ if __name__ == '__main__':
     # run inference
     pose_recon_losses = []
     gripper_classification_losses = []
+    all_rewards = []
     for i in range(len(dataset)):
         batch = dataset[i]
         gt_traj = batch["trajectory"]  # (T, D)
@@ -94,16 +106,25 @@ if __name__ == '__main__':
         episode = batch["episode"]
 
         # pad the gt_traj to make it length divisible by 4
-        gt_traj_padded = torch.zeros((gt_traj.shape[0] + (4 - gt_traj.shape[0] % 4) % 4, gt_traj.shape[1]))
+        gt_traj_padded = torch.zeros((gt_traj.shape[0] + (chunk_size - gt_traj.shape[0] % chunk_size) % chunk_size, gt_traj.shape[1]))
         gt_traj_padded[:gt_traj.shape[0], :] = gt_traj
         gt_traj_padded[gt_traj.shape[0]:, :] = gt_traj[-1]
         gt_traj = gt_traj_padded
 
         # reconstruct
         gt_traj = gt_traj.unsqueeze(0).cuda()  # (1, T, D)
+        traj_length = chunk_size * n_chunk_per_traj
         with torch.no_grad():
-            code = model.encode(gt_traj)
-            recon_traj = model.decode(code)
+            all_recon_traj = []
+            for sec_start in range(0, gt_traj.shape[1] - traj_length + chunk_size, chunk_size):
+                traj_chunk = gt_traj[:, sec_start:sec_start+traj_length]
+                code = model.encode(traj_chunk)
+                recon_traj = model.decode(code)
+                if sec_start == 0:
+                    all_recon_traj.append(recon_traj)
+                else:
+                    all_recon_traj.append(recon_traj[:, -chunk_size:, :])
+            recon_traj = torch.cat(all_recon_traj, dim=1)
             print(f"GT shape: {gt_traj.shape}, recon shape: {recon_traj.shape}")
 
         if model.motion_mode == "proprior":
@@ -116,10 +137,10 @@ if __name__ == '__main__':
         gripper_classification_loss = torch.nn.functional.binary_cross_entropy_with_logits(gt_traj[:, 7:8], recon_traj[:, 7:8], reduction="mean")
         pose_recon_losses.append(pose_recon_loss.item())
         gripper_classification_losses.append(gripper_classification_loss.item())
-        print(f"Eval {i}/{len(dataset)}: pose_recon_loss={pose_recon_loss: .4f}, gripper_classification_loss={gripper_classification_loss: .4f}")
+        print(f"Eval {i}/{len(dataset)}: pose_recon_loss={pose_recon_loss: .4f}, gripper_classification_loss={gripper_classification_loss: .4f} ", end="")
 
-        # visualize
-        if (i + 1) % args.vis_freq == 0:
+        # get reward
+        if args.cal_reward or (i + 1) % args.vis_freq == 0:
             gt_traj = gt_traj.numpy()
             recon_traj = recon_traj.numpy()
             # process recon trajectory to make it feasible
@@ -132,39 +153,44 @@ if __name__ == '__main__':
             task = rlbench_env.env.get_task(task_file_to_task_class(task_str))
             task.set_variation(variation)
 
-            # setup video recorder
-            # Add a global camera to the scene
-            cam_placeholder = Dummy('cam_cinematic_placeholder')
-            cam_resolution = [240, 240]
-            cam = VisionSensor.create(cam_resolution)
-            cam.set_pose(cam_placeholder.get_pose())
-            cam.set_parent(cam_placeholder)
+            if (i + 1) % args.vis_freq == 0:
+                # setup video recorder
+                # Add a global camera to the scene
+                cam_placeholder = Dummy('cam_cinematic_placeholder')
+                cam_resolution = [240, 240]
+                cam = VisionSensor.create(cam_resolution)
+                cam.set_pose(cam_placeholder.get_pose())
+                cam.set_parent(cam_placeholder)
 
-            cam_motion = CircleCameraMotion(cam, Dummy('cam_cinematic_base'), 0.005)
-            cams_motion = {"global": cam_motion}
-            tr = TaskRecorder(cams_motion, fps=20)
+                cam_motion = CircleCameraMotion(cam, Dummy('cam_cinematic_base'), 0.005)
+                cams_motion = {"global": cam_motion}
+                tr = TaskRecorder(cams_motion, fps=20)
 
-            task._scene.register_step_callback(tr.take_snap)
+                task._scene.register_step_callback(tr.take_snap)
+            else:
+                tr = None
 
+            if (i + 1) % args.vis_freq == 0:
+                try:
+                    run_single_trajectory(
+                        rlbench_env,
+                        gt_traj,
+                        task,
+                        task_str,
+                        variation,
+                        episode,
+                        tr
+                    )
+                    tr.save(os.path.join(
+                        save_dir, f"{i}_task_{task_str}_var_{variation}_eps_{episode}_gt.mp4"
+                    ))
+                except Exception as e:
+                    print(f"Error running GT trajectory: {e}")
+                    tr._snaps = {cam_name: [] for cam_name in tr._cams_motion.keys()}
+
+            reward = 0.0
             try:
-                run_single_trajectory(
-                    rlbench_env,
-                    gt_traj,
-                    task,
-                    task_str,
-                    variation,
-                    episode,
-                    tr
-                )
-                tr.save(os.path.join(
-                    save_dir, f"{i}_task_{task_str}_var_{variation}_eps_{episode}_gt.mp4"
-                ))
-            except Exception as e:
-                print(f"Error running GT trajectory: {e}")
-                tr._snaps = {cam_name: [] for cam_name in tr._cams_motion.keys()}
-
-            try:
-                run_single_trajectory(
+                reward = run_single_trajectory(
                     rlbench_env,
                     recon_traj,
                     task,
@@ -173,18 +199,29 @@ if __name__ == '__main__':
                     episode,
                     tr
                 )
-                tr.save(os.path.join(
-                    save_dir, f"{i}_task_{task_str}_var_{variation}_eps_{episode}_recon.mp4"
-                ))
+                if tr is not None:
+                    tr.save(os.path.join(
+                        save_dir, f"{i}_task_{task_str}_var_{variation}_eps_{episode}_recon.mp4"
+                    ))
             except Exception as e:
                 print(f"Error running recon trajectory: {e}")
                 tr._snaps = {cam_name: [] for cam_name in tr._cams_motion.keys()}
 
+            print(f"Reward: {reward}")
+            all_rewards.append(reward)
+        else:
+            print("")
+
     print(f"Average pose_recon_loss={np.mean(pose_recon_losses): .4f}, average gripper_classification_loss={np.mean(gripper_classification_losses): .4f}")
+    if len(all_rewards) > 0:
+        print(f"Average reward={np.mean(all_rewards): .4f}")
     rlbench_env.env.shutdown()
     # write losses to file
     with open(os.path.join(save_dir, "losses.txt"), "w") as f:
-        f.write(f"Average pose_recon_loss={np.mean(pose_recon_losses): .4f}\nAverage gripper_classification_loss={np.mean(gripper_classification_losses): .4f}")
+        content = f"Average pose_recon_loss={np.mean(pose_recon_losses): .4f}\nAverage gripper_classification_loss={np.mean(gripper_classification_losses): .4f}\n"
+        if len(all_rewards) > 0:
+            content += f"Average reward={np.mean(all_rewards): .4f}\n"
+        f.write(content)
 
 
 

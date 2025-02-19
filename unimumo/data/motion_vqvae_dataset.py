@@ -144,8 +144,12 @@ class MotionVQVAEDataset(Dataset):
                     relative_rot = r1.inv() * r2
                     delta_rot = relative_rot.magnitude()
                 if self.load_sparce and delta_trans < MIN_DELTA_TRANS and delta_rot < MIN_DELTA_ROT:
-                    # skip the frame if the action is too small
-                    continue
+                    if j == end_frame - 1 and len(traj_segment) == 1 and self.use_chunk:
+                        # keep the last frame if the segment is too short after filtering, which could cause error in interpolation
+                        pass
+                    else:
+                        # skip the frame if the action is too small
+                        continue
 
                 if not self.load_proprioception:
                     traj_segment.append(action.unsqueeze(0))
