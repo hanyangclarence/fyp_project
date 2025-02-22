@@ -35,8 +35,8 @@ model:
     language_fusor_config:
       target: unimumo.modules.motion_vqvae_module.MotionLanguageCrossAttn
       params:
-        embed_dim: 128
-        num_heads: 8
+        embed_dim: 512
+        num_heads: 16
     quantizer_config:
       dimension: 512
       n_q: 1

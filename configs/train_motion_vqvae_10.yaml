@@ -35,8 +35,8 @@ model:
     vision_fusor_config:
       target: unimumo.modules.motion_vqvae_module.MotionVisionCrossAttn
       params:
-        embed_dim: 128
-        num_heads: 8
+        embed_dim: 512
+        num_heads: 16
     vision_encoder_config:
       name: "resnet18"
       n_cameras: 2

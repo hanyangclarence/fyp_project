@@ -201,26 +201,26 @@ class MotionLanguageCrossAttn(nn.Module):
     def forward(self, motion, lang_emb):
         """
         Args:
-            motion: (B, 128, T) - Motion sequence embeddings
+            motion: (B, D, T) - Motion sequence embeddings
             lang_emb: (B, L, 512) - Language condition embeddings
         Returns:
-            (B, 128, T) - Motion embeddings attended by language
+            (B, D, T) - Motion embeddings attended by language
         """
         # Project language embeddings to key/value space
-        lang_k = self.lang_proj_k(lang_emb)  # (B, L, 128)
-        lang_v = self.lang_proj_v(lang_emb)  # (B, L, 128)
+        lang_k = self.lang_proj_k(lang_emb)  # (B, L, D)
+        lang_v = self.lang_proj_v(lang_emb)  # (B, L, D)
 
-        # Permute motion to (B, T, 128) for attention input
-        motion_permuted = motion.permute(0, 2, 1)  # (B, T, 128)
+        # Permute motion to (B, T, D) for attention input
+        motion_permuted = motion.permute(0, 2, 1)  # (B, T, D)
 
         # Apply cross-attention: motion attends to language
         attn_output, _ = self.cross_attn(
             query=motion_permuted,
             key=lang_k,
             value=lang_v
-        )  # Output shape: (B, T, 128)
+        )  # Output shape: (B, T, D)
 
-        # Permute back to original motion shape (B, 128, T)
+        # Permute back to original motion shape (B, D, T)
         attn_output = attn_output.permute(0, 2, 1)
 
         return attn_output
@@ -242,17 +242,17 @@ class MotionVisionCrossAttn(nn.Module):
     def forward(self, motion, vision_emb):
         """
         Args:
-            motion: (B, 128, T) - Motion sequence embeddings
+            motion: (B, D, T) - Motion sequence embeddings
             vision_emb: (B, 512, T) - Vision condition embeddings
         Returns:
-            (B, 128, T) - Motion embeddings attended by vision
+            (B, D, T) - Motion embeddings attended by vision
         """
         # Project vision embeddings to key/value space
         vision_emb = vision_emb.permute(0, 2, 1)  # (B, T, 512)
         vision_k = self.vision_proj_k(vision_emb)
         vision_v = self.vision_proj_v(vision_emb)
 
-        # Permute motion to (B, T, 128) for attention input
+        # Permute motion to (B, T, D) for attention input
         motion_permuted = motion.permute(0, 2, 1)
 
         # Apply cross-attention: motion attends to vision
@@ -260,9 +260,9 @@ class MotionVisionCrossAttn(nn.Module):
             query=motion_permuted,
             key=vision_k,
             value=vision_v
-        )  # Output shape: (B, T, 128)
+        )  # Output shape: (B, T, D)
 
-        # Permute back to original motion shape (B, 128, T)
+        # Permute back to original motion shape (B, D, T)
         attn_output = attn_output.permute(0, 2, 1)
 
         return attn_output
