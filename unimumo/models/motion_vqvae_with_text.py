@@ -7,6 +7,7 @@ from torch import Tensor
 import pytorch_lightning as pl
 from einops import rearrange
 import typing as tp
+import clip
 
 from unimumo.util import instantiate_from_config, get_obj_from_str
 from unimumo.audio.audiocraft_.quantization.vq import ResidualVectorQuantizer
@@ -20,6 +21,7 @@ class MotionVQVAE(pl.LightningModule):
         quantizer_config: dict,
         loss_config: dict,
         optimizer_config: dict,
+        language_fusor_config: dict,
         mean_dir: str,
         std_dir: str,
         monitor: tp.Optional[str] = None,
@@ -34,6 +36,11 @@ class MotionVQVAE(pl.LightningModule):
         self.quantizer = ResidualVectorQuantizer(**quantizer_config)
 
         self.loss = instantiate_from_config(loss_config)
+
+        # text related modules
+        self.clip_model, _ = clip.load("RN50", device="cuda")
+        self.clip_model.eval()
+        self.language_fusor = instantiate_from_config(**language_fusor_config)
 
         self.optimizer_config = optimizer_config
 
@@ -106,14 +113,9 @@ class MotionVQVAE(pl.LightningModule):
         description = batch["description"]
 
         code = self.encode(trajectory)
-        traj_recon = self.decode(code)
+        traj_recon = self.decode(code, description)
 
         loss, loss_dict = self.loss(self.normalize(trajectory[:, :, :8]), self.normalize(traj_recon), 0, split="val")
-
-        if batch_idx == 0:
-            print(f"!!!!!!!!!!!!!!!!!!!!!!!")
-            print(trajectory[0, :10, :3])
-            print(traj_recon[0, :10, :3])
 
         self.log("val_loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
         self.log_dict(loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=False)
@@ -169,6 +171,26 @@ class MotionVQVAE(pl.LightningModule):
 
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
+    @torch.no_grad()
+    def embed_text(self, texts: tp.List[str]):
+        text_inputs = clip.tokenize(texts).to(self.device)
+
+        x = self.clip_model.token_embedding(text_inputs).type(
+            self.clip_model.dtype
+        )  # [batch_size, n_ctx, d_model]
+
+        x = x + self.clip_model.positional_embedding.type(self.clip_model.dtype)
+        x = x.permute(1, 0, 2)  # NLD -> LND
+        x = self.clip_model.transformer(x)
+        x = x.permute(1, 0, 2)  # LND -> NLD
+        x = self.clip_model.ln_final(x).type(self.clip_model.dtype)
+
+        emb = x.clone()
+        x = x[torch.arange(x.shape[0]), text_inputs.argmax(dim=-1)] @ self.clip_model.text_projection
+
+        # x: [B, 1024], emb: [B, 77, 512]
+        return x, emb
+
     def embed_motion(self, trajectory: torch.Tensor):
         # trajectory: (B, T, 8)
         trajectory = rearrange(trajectory, 'b t d -> b d t')
@@ -176,19 +198,22 @@ class MotionVQVAE(pl.LightningModule):
 
         return motion_emb
 
-    def decode_motion_embed(self, motion_emb: torch.Tensor) -> torch.Tensor:
-        # motion_emb: [B, 128, T']
+    def decode_motion_embed(self, motion_emb: torch.Tensor, lang_emb: torch.Tensor) -> torch.Tensor:
+        # motion_emb: [B, 128, T'], lang_emb: [B, L, 512]
+        motion_emb = self.language_fusor(motion_emb, lang_emb)
         motion_recon = self.motion_decoder(motion_emb)
         motion_recon = rearrange(motion_recon, 'b d t -> b t d')  # [B, T, 8]
 
         return motion_recon
 
     def forward(self, trajectory: Tensor, description: tp.List[str]):
+        lang_emb = self.embed_text(description)[1]  # [B, L, 512]
+
         motion_emb = self.embed_motion(trajectory)
 
         q_res_motion = self.quantizer(motion_emb, 50)
 
-        motion_recon = self.decode_motion_embed(q_res_motion.x)
+        motion_recon = self.decode_motion_embed(q_res_motion.x, lang_emb)
 
         return motion_recon, q_res_motion.penalty  # penalty is the commitment loss
 
@@ -205,12 +230,13 @@ class MotionVQVAE(pl.LightningModule):
 
         return motion_code
 
-    def decode(self, motion_code: Tensor):
+    def decode(self, motion_code: Tensor, description: tp.List[str]):
         assert len(motion_code.shape) == 2, f"Expected 2D tensor, got {len(motion_code.shape)}"
         motion_code = motion_code[:, None]  # (B, T') -> (B, 1, T')
+        lang_emb = self.embed_text(description)[1]  # [B, L, 512]
 
         motion_emb = self.quantizer.decode(motion_code)
-        motion_recon = self.decode_motion_embed(motion_emb)
+        motion_recon = self.decode_motion_embed(motion_emb, lang_emb)
 
         motion_recon = self.denormalize(motion_recon)
 
