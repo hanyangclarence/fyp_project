@@ -40,7 +40,7 @@ class MotionVQVAE(pl.LightningModule):
         # text related modules
         self.clip_model, _ = clip.load("RN50", device="cuda")
         self.clip_model.eval()
-        self.language_fusor = instantiate_from_config(**language_fusor_config)
+        self.language_fusor = instantiate_from_config(language_fusor_config)
 
         self.optimizer_config = optimizer_config
 
