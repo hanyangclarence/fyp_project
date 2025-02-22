@@ -22,7 +22,7 @@ class MotionVQVAE(pl.LightningModule):
         decoder_config: dict,
         quantizer_config: dict,
         vision_encoder_config: dict,
-        fusor_config: dict,
+        vision_fusor_config: dict,
         loss_config: dict,
         optimizer_config: dict,
         mean_dir: str,
@@ -47,8 +47,7 @@ class MotionVQVAE(pl.LightningModule):
             vision_encoder_config["n_cameras"] * vision_encoder_config["encoder_dim"], vision_encoder_config["encoder_dim"]
         )
 
-        self.encoder_fusor = instantiate_from_config(fusor_config)
-        self.decoder_fusor = instantiate_from_config(fusor_config)
+        self.vision_fusor = instantiate_from_config(vision_fusor_config)
 
         self.loss = instantiate_from_config(loss_config)
 
@@ -126,7 +125,7 @@ class MotionVQVAE(pl.LightningModule):
         description = batch["description"]
         rgb = batch["rgb"]
 
-        code = self.encode(trajectory, rgb)
+        code = self.encode(trajectory)
         traj_recon = self.decode(code, rgb)
 
         loss, loss_dict = self.loss(self.normalize(trajectory[:, :, :8]), self.normalize(traj_recon), 0, split="val")
@@ -199,44 +198,26 @@ class MotionVQVAE(pl.LightningModule):
         rgb_features = rearrange(rgb_features, 'b t c -> b c t')  # (B, D, T)
         return rgb_features
 
-    def embed_motion(self, trajectory: torch.Tensor, visual_features: torch.Tensor) -> torch.Tensor:
-        # trajectory: (B, T, 8), visual_features: (B, 512, T')
+    def embed_motion(self, trajectory: torch.Tensor) -> torch.Tensor:
+        # trajectory: (B, T, 8)
         trajectory = rearrange(trajectory, 'b t d -> b d t')
         motion_emb = self.motion_encoder(trajectory)  # [B, D, T']
-
-        motion_emb = self.fuse_vision_in_encoder(motion_emb, visual_features)  # (B, D, T')
 
         return motion_emb
 
     def decode_motion_embed(self, motion_emb: torch.Tensor, visual_features: torch.Tensor) -> torch.Tensor:
         # motion_emb: [B, D, T'], visual_features: [B, 512, T']
-        motion_emb = self.fuse_vision_in_decoder(motion_emb, visual_features)  # (B, D, T')
+        motion_emb = self.vision_fusor(motion_emb, visual_features)  # (B, D, T')
 
         motion_recon = self.motion_decoder(motion_emb)
         motion_recon = rearrange(motion_recon, 'b d t -> b t d')  # [B, T, 8]
 
         return motion_recon
 
-    def fuse_vision_in_encoder(self, motion_emb: torch.Tensor, visual_features: torch.Tensor) -> torch.Tensor:
-        # motion_emb: (B, D, T'), visual_features: (B, 512, T')
-        assert motion_emb.shape[-1] == visual_features.shape[-1], f"Expected the same length, got {motion_emb.shape[-1]} and {visual_features.shape[-1]}"
-        fused_features = self.encoder_fusor(
-            torch.cat([motion_emb, visual_features], dim=1)
-        )  # (B, D, T')
-        return fused_features
-
-    def fuse_vision_in_decoder(self, motion_emb: torch.Tensor, visual_features: torch.Tensor) -> torch.Tensor:
-        # motion_emb: (B, D, T'), visual_features: (B, 512, T')
-        assert motion_emb.shape[-1] == visual_features.shape[-1], f"Expected the same length, got {motion_emb.shape[-1]} and {visual_features.shape[-1]}"
-        fused_features = self.decoder_fusor(
-            torch.cat([motion_emb, visual_features], dim=1)
-        )
-        return fused_features
-
     def forward(self, trajectory: Tensor, description: tp.List[str], rgb: Tensor):
         visual_features = self.encode_rgb(rgb)  # (B, 512, T')
 
-        motion_emb = self.embed_motion(trajectory, visual_features)  # (B, D, T')
+        motion_emb = self.embed_motion(trajectory)  # (B, D, T')
 
         q_res_motion = self.quantizer(motion_emb, 50)
 
@@ -244,14 +225,13 @@ class MotionVQVAE(pl.LightningModule):
 
         return motion_recon, q_res_motion.penalty  # penalty is the commitment loss
 
-    def encode(self, trajectory: Tensor, rgb: Tensor):
+    def encode(self, trajectory: Tensor):
         N, T, C = trajectory.shape
         assert C == self.input_dim, f"Expected {self.input_dim} channels, got {C}"
 
         trajectory = self.normalize(trajectory)
-        visual_features = self.encode_rgb(rgb)
 
-        motion_emb = self.embed_motion(trajectory, visual_features)
+        motion_emb = self.embed_motion(trajectory)
         motion_code = self.quantizer.encode(motion_emb).contiguous()
 
         motion_code = motion_code[:, 0]  # (B, 1, T') -> (B, T')

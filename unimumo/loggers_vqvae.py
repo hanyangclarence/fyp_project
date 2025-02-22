@@ -65,7 +65,7 @@ class TrajectoryLogger(Callback):
         with torch.no_grad():
             if "rgb" not in batch:
                 code = pl_module.encode(trajectory)
-                trajectory_recon = pl_module.decode(code)
+                trajectory_recon = pl_module.decode(code, description)
             else:
                 code = pl_module.encode(trajectory, batch["rgb"])
                 trajectory_recon = pl_module.decode(code, batch["rgb"])

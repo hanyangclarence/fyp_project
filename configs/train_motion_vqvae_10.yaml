@@ -32,16 +32,11 @@ model:
         dilation_growth_rate: 2
         depth_per_res_block: 6
         activation: 'relu'
-    fusor_config:
-      target: unimumo.modules.motion_vqvae_module.Encoder
+    vision_fusor_config:
+      target: unimumo.modules.motion_vqvae_module.MotionVisionCrossAttn
       params:
-        input_dim: 1024  # output_dim of encoder and decoder plus 512 (latent dim of resnet18)
-        output_dim: 512
-        emb_dim_encoder: [ 1024, 768, 512 ]
-        downsample: [ 0, 0 ]
-        dilation_growth_rate: 2
-        depth_per_res_block: 2
-        activation: 'relu'
+        embed_dim: 128
+        num_heads: 8
     vision_encoder_config:
       name: "resnet18"
       n_cameras: 2
@@ -68,7 +63,7 @@ model:
 data:
   target: train.DataModuleFromConfig
   params:
-    batch_size: 32
+    batch_size: 128
     wrap: True
     num_workers: 4
     train:
@@ -83,7 +78,7 @@ data:
         cameras: [ "front", "wrist" ]
         image_size: "224,224"
         chunk_size: 4
-        n_chunk_per_traj: 4
+        n_chunk_per_traj: 1
         compression_rate: 4
         use_chunk: True
         load_proprioception: True
@@ -101,7 +96,7 @@ data:
         cameras: [ "front", "wrist" ]
         image_size: "224,224"
         chunk_size: 4
-        n_chunk_per_traj: 4
+        n_chunk_per_traj: 1
         compression_rate: 4
         use_chunk: True
         load_proprioception: True
@@ -124,6 +119,6 @@ lightning:
 
   trainer:
     benchmark: True
-    devices: 1
+    devices: 4
     num_nodes: 1
     strategy: ddp
