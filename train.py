@@ -480,7 +480,7 @@ if __name__ == "__main__":
         if trainer_kwargs.get('strategy') is not None:
             del trainer_kwargs['strategy']
         trainer = Trainer(
-            strategy=pl.strategies.DDPStrategy(timeout=datetime.timedelta(seconds=4800)),
+            strategy=pl.strategies.DDPStrategy(find_unused_parameters=True),
             **vars(trainer_opt), **trainer_kwargs
         )
         trainer.logdir = logdir
