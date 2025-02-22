@@ -188,6 +188,9 @@ class MotionVQVAE(pl.LightningModule):
         emb = x.clone()
         x = x[torch.arange(x.shape[0]), text_inputs.argmax(dim=-1)] @ self.clip_model.text_projection
 
+        # change the data to float32
+        x = x.float()
+        emb = emb.float()
         # x: [B, 1024], emb: [B, 77, 512]
         return x, emb
 
