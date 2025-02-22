@@ -67,7 +67,7 @@ class TrajectoryLogger(Callback):
                 code = pl_module.encode(trajectory)
                 trajectory_recon = pl_module.decode(code, description)
             else:
-                code = pl_module.encode(trajectory, batch["rgb"])
+                code = pl_module.encode(trajectory)
                 trajectory_recon = pl_module.decode(code, batch["rgb"])
 
         print(f"!!!!!!!!!!!!!!!!!!!!!!!")
