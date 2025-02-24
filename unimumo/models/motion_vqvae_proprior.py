@@ -203,7 +203,7 @@ class MotionVQVAE(pl.LightningModule):
 
         return motion_code  # [B, N_q, T']
 
-    def decode(self, motion_code: Tensor):
+    def decode(self, motion_code: Tensor, description: tp.List[str] = None):
         assert len(motion_code.shape) == 3, f"Expected 2D tensor, got {len(motion_code.shape)}"
 
         motion_emb = self.quantizer.decode(motion_code)
