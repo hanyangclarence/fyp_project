@@ -1,0 +1,105 @@
+model:
+  target: unimumo.models.motion_vqvae_proprior.MotionVQVAE
+  params:
+    monitor: "val_loss"
+    mean_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/mean_proprior.npy"
+    std_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw/std_proprior.npy"
+    motion_mode: "proprior"  # "default" or "proprior"
+    normalize_motion: True
+    loss_config:
+      target: unimumo.modules.loss.LossWithCrossEntropy
+      params:
+        lambda_commit: 0.02
+        lambda_recon: 1.0
+        gripper_weight: 0.01
+    encoder_config:
+      target: unimumo.modules.motion_vqvae_module.Encoder
+      params:
+        input_dim: 24
+        output_dim: 512
+        emb_dim_encoder: [ 24, 48, 96, 192, 384, 512 ]
+        downsample: [ 0, 1, 0, 1, 0 ]
+        dilation_growth_rate: 2
+        depth_per_res_block: 6
+        activation: 'relu'
+    decoder_config:
+      target: unimumo.modules.motion_vqvae_module.Decoder
+      params:
+        input_dim: 8
+        output_dim: 512
+        emb_dim_decoder: [ 512, 384, 192, 96, 48, 24, 8 ]
+        upsample: [ 0, 1, 0, 1, 0, 0 ]
+        dilation_growth_rate: 2
+        depth_per_res_block: 6
+        activation: 'relu'
+    quantizer_config:
+      dimension: 512
+      n_q: 2
+      q_dropout: False,
+      bins: 512
+    optimizer_config:
+      optimizer:
+        target: AdamW
+        params:
+          lr: 2e-4
+          betas: [ 0.9, 0.99 ]
+          weight_decay: 0.0
+      lr_scheduler:
+        target: CosineAnnealingLR
+        params:
+          T_max: 20000  # not sure about this
+          eta_min: 1e-6
+
+
+data:
+  target: train.DataModuleFromConfig
+  params:
+    batch_size: 256
+    wrap: True
+    num_workers: 4
+    train:
+      target: unimumo.data.motion_vqvae_dataset.MotionVQVAEDataset
+      params:
+        split: "train"
+        data_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+        preload_data: True
+        load_observations: False
+        chunk_size: 4
+        n_chunk_per_traj: 4
+        use_chunk: False
+        load_proprioception: True
+        load_sparce: True
+
+    validation:
+      target: unimumo.data.motion_vqvae_dataset.MotionVQVAEDataset
+      params:
+        split: "val"
+        data_dir: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+        preload_data: True
+        load_observations: False
+        chunk_size: 4
+        n_chunk_per_traj: 4
+        use_chunk: False
+        load_proprioception: True
+        load_sparce: True
+
+
+lightning:
+  callbacks:
+    video_logger:
+      target: unimumo.loggers_vqvae.TrajectoryLogger
+      params:
+        save_video: True
+        num_videos: 1
+        save_freq_epoch: 400
+        rlb_config:
+          data_path: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+          image_size: "256,256"
+          apply_rgb: True
+          apply_pc: True
+
+  trainer:
+    benchmark: True
+    devices: 1
+    num_nodes: 1
+    strategy: ddp

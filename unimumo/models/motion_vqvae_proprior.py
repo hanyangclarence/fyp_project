@@ -201,13 +201,10 @@ class MotionVQVAE(pl.LightningModule):
         motion_emb = self.embed_motion(trajectory)
         motion_code = self.quantizer.encode(motion_emb).contiguous()
 
-        motion_code = motion_code[:, 0]  # (B, 1, T') -> (B, T')
-
-        return motion_code
+        return motion_code  # [B, N_q, T']
 
     def decode(self, motion_code: Tensor):
-        assert len(motion_code.shape) == 2, f"Expected 2D tensor, got {len(motion_code.shape)}"
-        motion_code = motion_code[:, None]  # (B, T') -> (B, 1, T')
+        assert len(motion_code.shape) == 3, f"Expected 2D tensor, got {len(motion_code.shape)}"
 
         motion_emb = self.quantizer.decode(motion_code)
         motion_recon = self.decode_motion_embed(motion_emb)

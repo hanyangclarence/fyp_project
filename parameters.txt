@@ -69,3 +69,15 @@ load sparce trajectory
 # train_motion_vqvae_15.yaml
 from train_motion_vqvae_14.yaml
 add language information
+
+
+
+# train_motion_vqvae_16.yaml
+from train_motion_vqvae_10.yaml
+change to chunk size 8, 1 chunk per traj, 8 compression rate
+also change to 1 gpu training, since multi-gpu training is a bit problematic
+
+
+# train_motion_vqvae_17.yaml
+from train_motion_vqvae_14.yaml
+add another codebook layer to see whether it gets better
