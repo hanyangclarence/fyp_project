@@ -47,6 +47,7 @@ gripper_weight: 0.5
 # train_motion_vqvae_10.yaml
 add vision information
 really cannot train
+this one also doesn't work when only 1 code for each whole chunk, similar to v16
 
 
 
@@ -69,6 +70,7 @@ load sparce trajectory
 # train_motion_vqvae_15.yaml
 from train_motion_vqvae_14.yaml
 add language information
+the loss seems worse than 14
 
 
 
@@ -76,6 +78,8 @@ add language information
 from train_motion_vqvae_10.yaml
 change to chunk size 8, 1 chunk per traj, 8 compression rate
 also change to 1 gpu training, since multi-gpu training is a bit problematic
+the reconstruction seems not bad for a single chunk. But when reconstructing the whole trajectory, it totally doesn't work
+We can also observe that, rgb observation is indeed helpful
 
 
 # train_motion_vqvae_17.yaml

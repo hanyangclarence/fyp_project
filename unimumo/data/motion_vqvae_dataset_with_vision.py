@@ -35,6 +35,7 @@ class MotionVQVAEDataset(Dataset):
             n_chunk_per_traj: int = 2,  # number of chunks in a trajectory
             compression_rate: int = 4,  # compression rate in time dimension
             load_sparce: bool = False,  # Whether to load sparse trajectory
+            load_full_traj: bool = False,  # Whether to load the complete trajectory for testing
     ):
         # load RLBench environment
         self.env = RLBenchEnv(
@@ -57,6 +58,7 @@ class MotionVQVAEDataset(Dataset):
         self.apply_depth = apply_depth
         self.apply_pc = apply_pc
         self.load_sparce = load_sparce
+        self.load_full_traj = load_full_traj
 
         self.rgb_transform = transforms.Compose([
             transforms.ToTensor(),  # converts to float32 and scales to [0,1]
@@ -97,8 +99,12 @@ class MotionVQVAEDataset(Dataset):
         len_traj = len(action_traj)
 
         # directly sample a trajectory
-        start_idx = random.randint(0, len_traj - self.n_chunk_per_traj * self.chunk_size)
-        end_idx = start_idx + self.n_chunk_per_traj * self.chunk_size
+        if self.load_full_traj:
+            start_idx = 0
+            end_idx = len_traj
+        else:
+            start_idx = random.randint(0, len_traj - self.n_chunk_per_traj * self.chunk_size)
+            end_idx = start_idx + self.n_chunk_per_traj * self.chunk_size
         traj = action_traj[start_idx:end_idx].float()  # (T, 8)
 
         # sample a random description
@@ -114,7 +120,7 @@ class MotionVQVAEDataset(Dataset):
 
         obs_ids = list(range(len_traj))[start_idx:end_idx:self.compression_rate]
         if self.apply_rgb:
-            all_frame_rgb_paths = observations["rgb"][start_idx:end_idx:self.compression_rate]
+            all_frame_rgb_paths = [observations["rgb"][i] for i in obs_ids]
             data_dict["rgb"] = []
             for rgb_paths_per_frame in all_frame_rgb_paths:
                 rgbs = []
@@ -134,7 +140,7 @@ class MotionVQVAEDataset(Dataset):
 
         if self.apply_depth or self.apply_pc:
             # calculating pc also needs depth
-            all_frame_depth_paths = observations["depth"][start_idx:end_idx:self.compression_rate]
+            all_frame_depth_paths = [observations["depth"][i] for i in obs_ids]
             data_dict["depth"] = []
             all_frame_depth_m = []
             for frame_id, depth_paths_per_frame in zip(obs_ids, all_frame_depth_paths):
@@ -168,9 +174,6 @@ class MotionVQVAEDataset(Dataset):
             data_dict["depth"] = torch.stack(data_dict["depth"])  # (T', N, 1, H, W)
 
         if self.apply_pc:
-            # data_dict["pc"] = torch.stack(
-            #     observations["pc"][start_idx:end_idx:self.compression_rate]
-            # )  # (T', N, 3, H, W)
             data_dict["pc"] = []
             for frame_id, depths_m in zip(obs_ids, all_frame_depth_m):
                 pcs = []
