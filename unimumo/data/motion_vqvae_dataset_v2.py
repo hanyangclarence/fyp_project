@@ -172,22 +172,46 @@ class MotionVQVAEDataset(Dataset):
             start_frame = key_frame_ids[i]
             end_frame = key_frame_ids[i + 1]
 
-            for j in range(start_frame, end_frame):
-                _, action, proprioception = self.env.get_obs_action(demo[j])  # action: (8), proprioception: (16)
+            # find the indices of the sparse action frames
 
-                if len(traj_segment) == 0 or i == len(key_frame_ids) - 2:
-                    # always keep the first frame and the last frame
-                    delta_trans = 999
-                    delta_rot = 999
+            if self.load_sparce:
+                if (end_frame - start_frame) == 1:
+                    # if only one frame, directly add it
+                    final_indices = [start_frame] * self.chunk_size
                 else:
-                    delta_trans = torch.norm(action[:3] - traj_segment[-1][0, :3])
-                    r1 = R.from_quat(traj_segment[-1][0, 3:7])
-                    r2 = R.from_quat(action[3:7])
-                    relative_rot = r1.inv() * r2
-                    delta_rot = relative_rot.magnitude()
-                if self.load_sparce and delta_trans < MIN_DELTA_TRANS and delta_rot < MIN_DELTA_ROT:
-                    # skip the frame if the action is too small
-                    continue
+                    selected_indices = []
+                    tempt_selected_traj = []
+                    for j in range(start_frame, end_frame):
+                        _, action, _ = self.env.get_obs_action(demo[j])
+                        if len(selected_indices) == 0 or (i == len(key_frame_ids) - 2 and j == end_frame - 1):
+                            # always keep the first frame and the last frame
+                            delta_trans = 999
+                            delta_rot = 999
+                        else:
+                            delta_trans = torch.norm(action[:3] - tempt_selected_traj[-1][0, :3])
+                            r1 = R.from_quat(tempt_selected_traj[-1][0, 3:7])
+                            r2 = R.from_quat(action[3:7])
+                            relative_rot = r1.inv() * r2
+                            delta_rot = relative_rot.magnitude()
+                        if delta_trans < MIN_DELTA_TRANS and delta_rot < MIN_DELTA_ROT:
+                            # skip the frame if the action is too small
+                            continue
+                        selected_indices.append(j)
+                        tempt_selected_traj.append(action.unsqueeze(0))
+                    len_sparce = len(selected_indices)
+                    # make it a multiple of chunk_size
+                    extra_length = (self.chunk_size - len_sparce % self.chunk_size) % self.chunk_size
+                    len_sparce += extra_length
+                    delta = (end_frame - 1 - start_frame) / (len_sparce - 1)
+
+                    final_indices = []
+                    for num_delta in range(len_sparce):
+                        final_indices.append(int(start_frame + num_delta * delta))
+            else:
+                final_indices = range(start_frame, end_frame)
+
+            for j in final_indices:
+                _, action, proprioception = self.env.get_obs_action(demo[j])  # action: (8), proprioception: (16)
 
                 if not self.load_proprioception:
                     traj_segment.append(action.unsqueeze(0))
@@ -197,14 +221,6 @@ class MotionVQVAEDataset(Dataset):
                 traj_index.append(j)
 
             traj_segment = torch.cat(traj_segment, dim=0)  # (n_frames, 8)
-
-            # repeat the last frame to make the length a multiple of chunk_size
-            len_segment = len(traj_segment)
-            extra_length = self.chunk_size - len_segment % self.chunk_size
-            if extra_length != self.chunk_size:
-                traj_segment = torch.cat([traj_segment, traj_segment[-1].unsqueeze(0).repeat(extra_length, 1)], dim=0)
-                traj_index.extend([traj_index[-1]] * extra_length)
-
             action_traj.append(traj_segment)
 
         action_traj = torch.cat(action_traj, dim=0)  # (n_frames, 8)
@@ -215,15 +231,6 @@ class MotionVQVAEDataset(Dataset):
         descriptions = demo[0].misc['descriptions']
 
         return action_traj, descriptions, traj_index
-
-
-if __name__ == "__main__":
-    data_dir = "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
-    dataset = MotionVQVAEDataset("val", data_dir)
-
-    for i in range(len(dataset)):
-        sample = dataset.__getitem__(i)
-        print(sample)
 
 
 
