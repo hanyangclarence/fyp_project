@@ -91,3 +91,8 @@ add another codebook layer to see whether it gets better
 # train_motion_vqvae_18.yaml
 from v10
 use chunk size 4, 4 chunk per traj, but only one observation per chunk
+
+
+# train_motion_vqvae_19.yaml
+from v18
+use new dataloader

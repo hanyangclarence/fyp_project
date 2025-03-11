@@ -30,6 +30,8 @@ class MotionVQVAEDataset(Dataset):
             chunk_size: int = 4,  # number of frames in a chunk
             n_chunk_per_traj: int = 2,  # number of chunks in a trajectory
             load_sparce: bool = False,  # Whether to load sparse trajectory
+            load_full_traj: bool = False,  # Whether to load full trajectory
+            load_traj_index: bool = False
     ):
         # load RLBench environment
         self.env = RLBenchEnv(
@@ -47,6 +49,8 @@ class MotionVQVAEDataset(Dataset):
         # about load content settings
         self.load_proprioception = load_proprioception
         self.load_sparce = load_sparce
+        self.load_full_traj = load_full_traj
+        self.load_traj_index = load_traj_index
 
         # load data
         self.split = split
@@ -101,8 +105,8 @@ class MotionVQVAEDataset(Dataset):
         self.load_observations = load_observations
         if preload_data:
             for task, var, eps in tqdm(self.all_demos_ids, desc=f"Loading {split} data"):
-                action_traj, descriptions = self.load_obs_traj(task, var, eps, load_observations)
-                self.data.append((action_traj, descriptions, task, var, eps))
+                action_traj, descriptions, traj_index = self.load_obs_traj(task, var, eps, load_observations)
+                self.data.append((action_traj, descriptions, traj_index, task, var, eps))
         print(f"{split} data loaded, total number of demos: {len(self.data)}")
 
     def __len__(self):
@@ -110,43 +114,45 @@ class MotionVQVAEDataset(Dataset):
 
     def __getitem__(self, idx):
         if self.preload_data:
-            action_traj, descriptions, task, var, eps = self.data[idx]
+            action_traj, descriptions, traj_index, task, var, eps = self.data[idx]
         else:
             task, var, eps = self.all_demos_ids[idx]
-            action_traj, descriptions = self.load_obs_traj(task, var, eps, self.load_observations)
+            action_traj, descriptions, traj_index = self.load_obs_traj(task, var, eps, self.load_observations)
         len_traj = len(action_traj)
 
-        if self.split == "test":
-            # for test set, directly return the trajectory and description
-            return {
+        if self.load_full_traj:
+            # directly return the trajectory and description
+            data_dict = {
                 "trajectory": action_traj.float(),  # (T, 8)
                 "description": descriptions[0],  # str
                 "task_str": task,  # str
                 "variation": var,  # int
                 "episode": eps,  # int
             }
-        if self.use_chunk:
-            # sample a random chunk
-            start_idx = random.randint(0, len_traj // self.chunk_size - self.n_chunk_per_traj) * self.chunk_size
-            end_idx = start_idx + self.chunk_size * self.n_chunk_per_traj
-            traj = action_traj[start_idx:end_idx].float()  # (T, 8), also convert to float32 tensor
-        else:
-            # directly sample a trajectory
-            start_idx = random.randint(0, len_traj - self.n_chunk_per_traj * self.chunk_size)
-            end_idx = start_idx + self.n_chunk_per_traj * self.chunk_size
-            traj = action_traj[start_idx:end_idx].float()  # (T, 8)
+            if self.load_traj_index:
+                data_dict["trajectory_index"] = traj_index
+            return data_dict
+
+        # directly sample a trajectory
+        start_idx = random.randint(0, len_traj - self.n_chunk_per_traj * self.chunk_size)
+        end_idx = start_idx + self.n_chunk_per_traj * self.chunk_size
+        traj = action_traj[start_idx:end_idx].float()  # (T, 8)
+        sliced_traj_index = traj_index[start_idx:end_idx]  # (T,)
 
 
         # sample a random description
         desc = random.choice(descriptions)
 
-        return  {
+        data_dict = {
             "trajectory": traj,  # (T, 8)
             "description": desc,  # str
             "task_str": task,  # str
             "variation": var,  # int
             "episode": eps,  # int
         }
+        if self.load_traj_index:
+            data_dict["trajectory_index"] = sliced_traj_index
+        return data_dict
 
 
     def load_obs_traj(self, task: str, variation: int, episode: int, load_observations: bool = False):
@@ -158,6 +164,7 @@ class MotionVQVAEDataset(Dataset):
         key_frame_ids.insert(0, 0)
 
         action_traj = []
+        traj_index = []
 
         # process the segment between each pair of key frames: interpolate their length to a multiple of chunk_size
         for i in range(len(key_frame_ids) - 1):
@@ -179,35 +186,35 @@ class MotionVQVAEDataset(Dataset):
                     relative_rot = r1.inv() * r2
                     delta_rot = relative_rot.magnitude()
                 if self.load_sparce and delta_trans < MIN_DELTA_TRANS and delta_rot < MIN_DELTA_ROT:
-                    if j == end_frame - 1 and len(traj_segment) == 1 and self.use_chunk:
-                        # keep the last frame if the segment is too short after filtering, which could cause error in interpolation
-                        pass
-                    else:
-                        # skip the frame if the action is too small
-                        continue
+                    # skip the frame if the action is too small
+                    continue
 
                 if not self.load_proprioception:
                     traj_segment.append(action.unsqueeze(0))
                 else:
                     traj_segment.append(torch.cat([action.unsqueeze(0), proprioception.unsqueeze(0)], dim=1))
 
+                traj_index.append(j)
+
             traj_segment = torch.cat(traj_segment, dim=0)  # (n_frames, 8)
 
-            if self.use_chunk:
-                # if load trajectory in chunks, interpolate the length of each segment to a multiple of chunk_size
-                len_segment = len(traj_segment)
-                target_interp_length = len_segment + self.chunk_size - len_segment % self.chunk_size
-                traj_segment = interpolate_trajectory(traj_segment, target_interp_length)
+            # repeat the last frame to make the length a multiple of chunk_size
+            len_segment = len(traj_segment)
+            extra_length = self.chunk_size - len_segment % self.chunk_size
+            if extra_length != self.chunk_size:
+                traj_segment = torch.cat([traj_segment, traj_segment[-1].unsqueeze(0).repeat(extra_length, 1)], dim=0)
+                traj_index.extend([traj_index[-1]] * extra_length)
 
             action_traj.append(traj_segment)
 
         action_traj = torch.cat(action_traj, dim=0)  # (n_frames, 8)
+        traj_index = torch.tensor(traj_index, dtype=torch.long)
 
         # TODO: code for loading observations images/point clouds is not implemented yet
 
         descriptions = demo[0].misc['descriptions']
 
-        return action_traj, descriptions
+        return action_traj, descriptions, traj_index
 
 
 if __name__ == "__main__":
