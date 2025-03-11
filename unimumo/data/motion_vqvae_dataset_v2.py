@@ -81,6 +81,21 @@ class MotionVQVAEDataset(Dataset):
                 load_sparce=load_sparce
             )
             self.data.extend(val_dataset.data)
+            # also load test data
+            test_dataset = MotionVQVAEDataset(
+                "test",
+                data_dir,
+                preload_data=True,
+                cameras=cameras,
+                image_size=image_size,
+                load_observations=load_observations,
+                load_proprioception=load_proprioception,
+                use_chunk=use_chunk,
+                chunk_size=chunk_size,
+                n_chunk_per_traj=n_chunk_per_traj,
+                load_sparce=load_sparce
+            )
+            self.data.extend(test_dataset.data)
 
         self.preload_data = preload_data
         self.load_observations = load_observations
