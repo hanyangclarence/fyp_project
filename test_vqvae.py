@@ -79,6 +79,7 @@ if __name__ == '__main__':
         chunk_size=chunk_size,
         n_chunk_per_traj=n_chunk_per_traj,
         load_sparce=config["data"]["params"]["validation"]["params"]["load_sparce"],
+        load_full_traj=True,
     )
 
     # init simulation env
