@@ -124,7 +124,7 @@ if __name__ == '__main__':
                     [code, torch.tensor([[[END_TOKEN] * n_chunk_per_traj]]).cuda()],
                     dim=-1
                 )
-                all_indices.append(torch.tensor(traj_index[gt_traj.shape[1] - traj_length + chunk_size]))
+                all_indices.append(traj_index[gt_traj.shape[1] - traj_length + chunk_size])
 
             if model.motion_mode == "proprior":
                 gt_traj = gt_traj[:, :, :8]
