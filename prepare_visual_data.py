@@ -63,8 +63,6 @@ class MotionVQVAEDataset(Dataset):
 
         self.rgb_transform = transforms.Compose([
             transforms.ToTensor(),  # converts to float32 and scales to [0,1]
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])
         ])
 
         # load data
