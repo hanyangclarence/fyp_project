@@ -17,7 +17,8 @@ from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, Mover, task_file_to_t
 from unimumo.rlbench.utils_with_recorder import TaskRecorder, StaticCameraMotion, CircleCameraMotion, AttachedCameraMotion
 
 
-
+START_TOKEN = 512
+END_TOKEN = 513
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -117,6 +118,13 @@ if __name__ == '__main__':
                 recon_traj = torch.cat(all_recon_trajectories, dim=1)
 
                 print(f"GT shape: {gt_traj.shape}, recon shape: {recon_traj.shape}, code shape: {code.shape}")
+
+                # append end tokens
+                code = torch.cat(
+                    [code, torch.tensor([[[END_TOKEN] * n_chunk_per_traj]]).cuda()],
+                    dim=-1
+                )
+                all_indices.append(torch.tensor(traj_index[gt_traj.shape[1] - traj_length + chunk_size]))
 
             if model.motion_mode == "proprior":
                 gt_traj = gt_traj[:, :, :8]
