@@ -1,4 +1,4 @@
-from x_transformers.x_transformers import (
+from unimumo.x_transformers.x_transformers import (
     XTransformer,
     Encoder,
     Decoder,
@@ -12,28 +12,28 @@ from x_transformers.x_transformers import (
     ViTransformerWrapper
 )
 
-from x_transformers.autoregressive_wrapper import AutoregressiveWrapper
-from x_transformers.nonautoregressive_wrapper import NonAutoregressiveWrapper
-from x_transformers.belief_state_wrapper import BeliefStateWrapper
+from unimumo.x_transformers.autoregressive_wrapper import AutoregressiveWrapper
+from unimumo.x_transformers.nonautoregressive_wrapper import NonAutoregressiveWrapper
+from unimumo.x_transformers.belief_state_wrapper import BeliefStateWrapper
 
-from x_transformers.continuous import (
+from unimumo.x_transformers.continuous import (
     ContinuousTransformerWrapper,
     ContinuousAutoregressiveWrapper
 )
 
-from x_transformers.multi_input import MultiInputTransformerWrapper
+from unimumo.x_transformers.multi_input import MultiInputTransformerWrapper
 
-from x_transformers.xval import (
+from unimumo.x_transformers.xval import (
     XValTransformerWrapper,
     XValAutoregressiveWrapper
 )
 
-from x_transformers.xl_autoregressive_wrapper import XLAutoregressiveWrapper
+from unimumo.x_transformers.xl_autoregressive_wrapper import XLAutoregressiveWrapper
 
-from x_transformers.dpo import (
+from unimumo.x_transformers.dpo import (
     DPO
 )
 
-from x_transformers.neo_mlp import (
+from unimumo.x_transformers.neo_mlp import (
     NeoMLP
 )

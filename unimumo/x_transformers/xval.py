@@ -14,7 +14,7 @@ from collections import namedtuple
 from einops import rearrange
 from einops.layers.torch import Rearrange
 
-from x_transformers.x_transformers import (
+from unimumo.x_transformers.x_transformers import (
     AttentionLayers,
     TokenEmbedding,
     ScaledSinusoidalEmbedding,
@@ -22,7 +22,7 @@ from x_transformers.x_transformers import (
     always
 )
 
-from x_transformers.autoregressive_wrapper import (
+from unimumo.x_transformers.autoregressive_wrapper import (
     top_k,
     top_p
 )

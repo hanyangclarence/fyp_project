@@ -9,7 +9,7 @@ from typing import Dict
 
 from einops import pack, repeat, unpack
 
-from x_transformers.x_transformers import (
+from unimumo.x_transformers.x_transformers import (
     AttentionLayers,
     ScaledSinusoidalEmbedding,
     AbsolutePositionalEmbedding,

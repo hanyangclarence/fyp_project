@@ -20,8 +20,8 @@ from dataclasses import dataclass
 
 from loguru import logger
 
-from x_transformers.attend import Attend, Intermediates
-from x_transformers.autoregressive_wrapper import AutoregressiveWrapper
+from unimumo.x_transformers.attend import Attend, Intermediates
+from unimumo.x_transformers.autoregressive_wrapper import AutoregressiveWrapper
 
 import einx
 from einops.layers.torch import Rearrange

@@ -3,7 +3,7 @@ from copy import deepcopy
 import torch
 from torch.nn import Module
 import torch.nn.functional as F
-from x_transformers.x_transformers import TransformerWrapper
+from unimumo.x_transformers.x_transformers import TransformerWrapper
 
 import einx
 from einops import rearrange

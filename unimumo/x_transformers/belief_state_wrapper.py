@@ -12,12 +12,12 @@ from torch.nn import Module, ModuleList
 from torch import nn, cat, stack, tensor, arange, cartesian_prod
 import torch.nn.functional as F
 
-from x_transformers.autoregressive_wrapper import (
+from unimumo.x_transformers.autoregressive_wrapper import (
     eval_decorator,
     min_p,
 )
 
-from x_transformers.x_transformers import (
+from unimumo.x_transformers.x_transformers import (
     Decoder,
     TransformerWrapper
 )

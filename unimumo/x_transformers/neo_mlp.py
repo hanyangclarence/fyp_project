@@ -7,7 +7,7 @@ from torch.nn import Module, ModuleList
 
 from einops import rearrange, repeat, einsum, pack, unpack
 
-from x_transformers.x_transformers import (
+from unimumo.x_transformers.x_transformers import (
     Encoder
 )
 

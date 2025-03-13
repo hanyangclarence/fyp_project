@@ -9,7 +9,7 @@ from torch import nn
 
 from einops import rearrange, repeat, pack, unpack
 
-from x_transformers.x_transformers import TransformerWrapper
+from unimumo.x_transformers.x_transformers import TransformerWrapper
 from typing import Optional
 
 # constants
