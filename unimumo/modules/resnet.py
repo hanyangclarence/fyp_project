@@ -1,60 +1,109 @@
-# Adapted from https://github.com/pytorch/vision/blob/v0.11.0/torchvision/models/resnet.py
+import ssl
+from functools import reduce
+from typing import Tuple
 
 import torch
-from torchvision import transforms
-from typing import Type, Union, List, Any
-from torchvision.models.resnet import _resnet, BasicBlock, Bottleneck, ResNet
+import torch.nn as nn
+import torchvision as tv
+import torchvision.transforms as tsfm
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 
-def load_resnet50(pretrained: bool = False):
-    backbone = _resnet('resnet50', Bottleneck, [3, 4, 6, 3], pretrained=pretrained, progress=True)
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    return backbone, normalize
+def preproc_fn(h=224, w=224, rgb=True):
+    """Get preprocessing function for imagenet.
 
-def load_resnet18(pretrained: bool = False):
-    backbone = _resnet('resnet18', Bottleneck, [2, 2, 2, 2], pretrained=pretrained, progress=True)
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    return backbone, normalize
+    Args:
+        h (int, optional): image height.
+        w (int, optional): image width.
+        rgb (bool, optional): if the input is a rgb image.
+        input_channels (int, optional): input channels of the image.
+    """
+    # standard imagenet normalization taken from
+    # https://github.com/pytorch/examples/blob/main/imagenet/main.py
+    fns = []
 
-def _resnet(
-    arch: str,
-    block: Type[Union[BasicBlock, Bottleneck]],
-    layers: List[int],
-    pretrained: bool,
-    progress: bool,
-    **kwargs: Any
-) -> ResNet:
-    model = ResNetFeatures(block, layers, **kwargs)
-    if pretrained:
-        if int(torch.__version__[0]) <= 1:
-            from torch.hub import load_state_dict_from_url
-            from torchvision.models.resnet import model_urls
-            state_dict = load_state_dict_from_url(model_urls[arch], progress=progress)
-            model.load_state_dict(state_dict)
+    if rgb:
+        fns = fns + [
+            lambda x: x.float() / 255.0,
+            tsfm.Resize([h, w]),
+            tsfm.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    else:
+        fns = fns + [tsfm.Resize([h, w])]
+
+    return tsfm.Compose(fns)
+
+
+def infer_model_out_shape(model, input_shape: Tuple) -> tuple:
+    """Infer the output shape of model with given input shape.
+
+    Returns:
+        output shape
+    """
+    batch_shape = (1,) + input_shape
+    with torch.no_grad():
+        test_input = torch.rand(batch_shape)
+        test_out = model(test_input)
+    return tuple(list(test_out.size())[1:])
+
+
+class ResnetEncoder(nn.Module):
+    """ResNet variant encoder for image encoding."""
+
+    def __init__(
+        self,
+        input_shape: tuple = (3, 224, 224),
+        model: str = "resnet18",
+        pretrained: bool = True,
+        freeze: bool = True,
+        rgb: bool = False,
+    ):
+        """Resnet encoder initialisation.
+
+        Args:
+            input_shape: input image shape
+            model: resnet model name, choices=["resnet18", "resnet50", "resnet101"]
+            pretrained: to use the imagenet pretrained model weight
+            freeze: whether to freeze encoder
+        """
+        super().__init__()
+        self.model = model
+        self.pretrained = pretrained and (input_shape[0] == 3)
+        self.freeze = freeze
+        self.pre_proc = preproc_fn(*input_shape[-2:], rgb=rgb)
+
+        input_shape = tuple(input_shape)
+        if input_shape[0] != 3:
+            self.channel_conv = nn.Conv2d(
+                input_shape[0], 3, kernel_size=1, stride=1, padding=0
+            )
+
+        try:
+            resnet = getattr(tv.models, model)(pretrained=self.pretrained)
+        except AttributeError as e:
+            raise NotImplementedError(f"No such network name {model}: {e}") from e
+
+        self.backbone = nn.Sequential(*list(resnet.children())[:-1])
+        output_shape = infer_model_out_shape(self, input_shape)
+        self.n_channel = reduce(lambda x, y: x * y, output_shape)
+
+    def forward(self, img: torch.Tensor) -> torch.Tensor:
+        """NN forward steps.
+
+        Args:
+            rgb: input image tensor following pytorch channel order (C, H, W)
+
+        Returns:
+            encoded feature tensor
+        """
+        img = self.pre_proc(img)
+        if img.size(1) != 3:
+            img = self.channel_conv(img)
+
+        if self.freeze:
+            with torch.no_grad():
+                feat = self.backbone(img)
         else:
-            raise NotImplementedError("Pretrained models not supported in PyTorch 2.0+")
-    return model
-
-
-class ResNetFeatures(ResNet):
-    def __init__(self, block, layers, **kwargs):
-        super().__init__(block, layers, **kwargs)
-
-    def _forward_impl(self, x: torch.Tensor):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x0 = self.relu(x)
-        x = self.maxpool(x0)
-
-        x1 = self.layer1(x)
-        x2 = self.layer2(x1)
-        x3 = self.layer3(x2)
-        x4 = self.layer4(x3)
-
-        return {
-            "res1": x0,
-            "res2": x1,
-            "res3": x2,
-            "res4": x3,
-            "res5": x4,
-        }
+            feat = self.backbone(img)
+        return feat.squeeze(-1).squeeze(-1)

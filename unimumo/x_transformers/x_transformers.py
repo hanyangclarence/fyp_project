@@ -1,4 +1,5 @@
 from __future__ import annotations
+import einx
 from typing import Callable
 
 import math
@@ -23,7 +24,7 @@ from loguru import logger
 from unimumo.x_transformers.attend import Attend, Intermediates
 from unimumo.x_transformers.autoregressive_wrapper import AutoregressiveWrapper
 
-import einx
+
 from einops.layers.torch import Rearrange
 from einops import rearrange, repeat, reduce, pack, unpack
 
@@ -1921,6 +1922,9 @@ class AttentionLayers(Module):
         learned_value_residual_mix = True,   # seeing big improvements when the value residual mix value is learned per token - credit goes to @faresobeid for taking the first step with learned scalar mix, then @Blinkdl for taking it a step further with data dependent. here we will use per token learned
         rel_pos_kwargs: dict = dict(),
         residual_fn_kwargs: dict = dict(),
+        dim_lang_feature=None,
+        dim_rgb_feature=None,
+        dim_pcd_feature=None,
         **kwargs
     ):
         super().__init__()
@@ -2190,8 +2194,19 @@ class AttentionLayers(Module):
         learned_value_residual_mix &= add_value_residual
 
         # iterate and construct layers
-
+        cross_attn_counter = 0
         for ind, (layer_type, layer_shift_tokens) in enumerate(zip(self.layer_types, shift_tokens)):
+            if layer_type == 'c':
+                if cross_attn_counter % 3 == 0:
+                    dim_context = dim_lang_feature
+                elif cross_attn_counter % 3 == 1:
+                    dim_context = dim_rgb_feature
+                else:
+                    dim_context = dim_pcd_feature
+                cross_attn_counter += 1
+                attn_kwargs['dim_context'] = dim_context
+            else:
+                attn_kwargs['dim_context'] = None
 
             # `ind` is the index of each module - attention, feedforward, cross attention
             # but `block_ind` refers to the typical enumeration of a transformer block (attn + ff + [optional] cross attn)
@@ -2305,9 +2320,18 @@ class AttentionLayers(Module):
         attn_bias = None,
         condition = None,
         in_attn_cond = None, # https://arxiv.org/abs/2105.04090
-        layers_execute_order: tuple[int, ...] | None = None
+        layers_execute_order: tuple[int, ...] | None = None,
+        rgb_feature=None,
+        pcd_feature=None,
+        instruction_feature=None,
+        visual_cross_attn_mask=None,
     ):
-        assert not (self.cross_attend ^ exists(context)), 'context must be passed in if cross_attend is set to True'
+        if self.cross_attend:
+            assert rgb_feature is not None, 'RGB feature must be provided for cross attention'
+            assert pcd_feature is not None, 'PCD feature must be provided for cross attention'
+            assert instruction_feature is not None, 'Instruction feature must be provided for cross attention'
+            assert visual_cross_attn_mask is not None, 'Visual cross attention mask must be provided for cross attention'
+        # assert not (self.cross_attend ^ exists(context)), 'context must be passed in if cross_attend is set to True'
         assert not (exists(condition) ^ self.need_condition), 'condition needs to be passed in if using adaptive layernorm or vice versa'
 
         # handle condition
@@ -2450,8 +2474,25 @@ class AttentionLayers(Module):
         first_cross_attn_inter = None
 
         # go through the attention and feedforward layers
-
+        cross_attn_counter = 0
+        cross_attn_mask = None
         for ind, (layer_type, skip_combine, (norm, block, residual_fn), layer_dropout, layer_integrator) in enumerate(zip(*layer_variables)):
+            if layer_type == 'c':
+                if cross_attn_counter % 3 ==0:
+                    context = instruction_feature
+                    cross_attn_mask = None
+                elif cross_attn_counter % 3 == 1:
+                    context = rgb_feature
+                    cross_attn_mask = visual_cross_attn_mask
+                elif cross_attn_counter % 3 == 2:
+                    context = pcd_feature
+                    cross_attn_mask = visual_cross_attn_mask
+                assert context is not None, f"{cross_attn_counter} context is None"
+                cross_attn_counter += 1
+            else:
+                context = None
+                cross_attn_mask = None
+
             is_last = ind == (len(self.layers) - 1)
 
             # handle skip connections
@@ -2519,7 +2560,7 @@ class AttentionLayers(Module):
             if layer_type == 'a':
                 out, inter = block(x, mask = mask, context_mask = self_attn_kv_mask, attn_mask = attn_mask, rel_pos = self.rel_pos, pos = pos, rotary_pos_emb = rotary_pos_emb, prev_attn = prev_attn, cache = next(iter_attn_cache, None), mem = layer_mem, mem_mask = layer_mem_mask, attn_bias = attn_bias, value_residual = maybe_self_attn_value_residual, return_intermediates = True)
             elif layer_type == 'c':
-                out, inter = block(x, context = context, mask = mask, context_mask = context_mask, prev_attn = prev_cross_attn, cache = next(iter_attn_cache, None), value_residual = maybe_cross_attn_value_residual, **cross_attn_rotary_pos_emb, return_intermediates = True)
+                out, inter = block(x, context = context, mask = mask, context_mask = context_mask, attn_mask = cross_attn_mask, prev_attn = prev_cross_attn, cache = next(iter_attn_cache, None), value_residual = maybe_cross_attn_value_residual, **cross_attn_rotary_pos_emb, return_intermediates = True)
             elif layer_type == 'f':
                 out = block(x)
 

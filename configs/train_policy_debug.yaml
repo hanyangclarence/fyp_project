@@ -1,0 +1,69 @@
+model:
+  target: unimumo.models.policy_transformer.PolicyTransformer
+  params:
+    monitor: "val_loss"
+    num_tokens: 514
+    max_traj_length: 10
+    start_idx: 512
+    end_idx: 513
+    encoder_config:
+      image_size: [3, 256, 256]
+      embedding_dim: 27
+      n_cameras: 4
+      rgb_encoder: "resnet18"
+    transformer_config:
+      dim: 19
+      depth: 6
+      heads: 2
+      cross_attend: True
+    optimizer_config:
+      optimizer:
+        target: AdamW
+        params:
+          lr: 5e-5
+          betas: [ 0.9, 0.99 ]
+          weight_decay: 0.0
+      lr_scheduler:
+        target: CosineAnnealingLR
+        params:
+          T_max: 20000  # not sure about this
+          eta_min: 1e-6
+data:
+  target: train.DataModuleFromConfig
+  params:
+    batch_size: 2
+    wrap: True
+    num_workers: 4
+    train:
+      target: unimumo.data.policy_dataset.PolicyDataset
+      params:
+        split: "train"
+        motion_code_dir: "data/motion_code"
+        visual_data_dir: "data/observations"
+        instruction_path: "data/instructions.pkl"
+        traj_length: 3
+        start_idx: 512
+        end_idx: 513
+    validation:
+      target: unimumo.data.policy_dataset.PolicyDataset
+      params:
+        split: "val"
+        motion_code_dir: "data/motion_code"
+        visual_data_dir: "data/observations"
+        instruction_path: "data/instructions.pkl"
+        traj_length: 3
+        start_idx: 512
+        end_idx: 513
+
+lightning:
+  callbacks:
+    video_logger:
+      target: unimumo.dummy_logger.DummyLogger
+      params:
+        save_video: True
+
+  trainer:
+    benchmark: True
+    devices: 1
+    num_nodes: 1
+    strategy: ddp

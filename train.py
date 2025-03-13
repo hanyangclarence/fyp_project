@@ -84,13 +84,13 @@ def get_parser(**parser_kwargs):
         default=False,
         help="scale base-lr by ngpu * batch_size * n_accumulate",
     )
-    parser.add_argument(
-        "--stage",
-        type=str,
-        required=True,
-        choices=['train_vqvae', 'train_music_motion', 'train_caption'],
-        help="specify one of the training stages of unimumo",
-    )
+    # parser.add_argument(
+    #     "--stage",
+    #     type=str,
+    #     required=True,
+    #     choices=['train_vqvae', 'train_music_motion', 'train_caption'],
+    #     help="specify one of the training stages of unimumo",
+    # )
     parser.add_argument(
         "--mm_ckpt",
         type=str,
@@ -140,8 +140,10 @@ def data_collate(batch):
         adapted_batch["rgb"] = torch.stack([b['rgb'] for b in notnone_batches])  # (B, T', N, 3, H, W)
     if all(["depth" in b.keys() for b in notnone_batches]):
         adapted_batch["depth"] = torch.stack([b['depth'] for b in notnone_batches])  # (B, T', N, 1, H, W)
-    if all(["pc" in b.keys() for b in notnone_batches]):
-        adapted_batch["pc"] = torch.stack([b['pc'] for b in notnone_batches])  # (B, T', N, 3, H, W)
+    if all(["pcd" in b.keys() for b in notnone_batches]):
+        adapted_batch["pcd"] = torch.stack([b['pcd'] for b in notnone_batches])  # (B, T', N, 3, H, W)
+    if all(["instruction" in b.keys() for b in notnone_batches]):
+        adapted_batch["instruction"] = torch.stack([b['instruction'] for b in notnone_batches])  # (B, 54, 512)
 
     return adapted_batch
 
@@ -347,10 +349,10 @@ if __name__ == "__main__":
         trainer_opt = argparse.Namespace(**trainer_config)
         lightning_config.trainer = trainer_config
 
-        # set training stage and checkpoint of music motion lm
-        if opt.stage != "train_vqvae":
-            config.model.params.stage = opt.stage
-            config.model.params.mm_ckpt = opt.mm_ckpt
+        # # set training stage and checkpoint of music motion lm
+        # if opt.stage != "train_vqvae":
+        #     config.model.params.stage = opt.stage
+        #     config.model.params.mm_ckpt = opt.mm_ckpt
 
         # model
         model = instantiate_from_config(config.model)

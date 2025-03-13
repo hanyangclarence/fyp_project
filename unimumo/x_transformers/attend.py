@@ -492,7 +492,7 @@ class Attend(Module):
         if exists(mask):
             sim = sim.masked_fill(~mask, mask_value)
 
-        if causal:
+        if causal and mask is None:
             causal_mask = self.create_causal_mask(i, j, device = device)
             sim = sim.masked_fill(causal_mask, mask_value)
 
