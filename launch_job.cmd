@@ -6,6 +6,7 @@
 
 source /research/d2/fyp24/hyang2/anaconda3/etc/profile.d/conda.sh
 
-conda activate 3d_diffuser_actor
+conda activate fyp
 
-xvfb-run python train.py --stage train_vqvae --base configs/train_motion_vqvae_16.yaml
+@REM xvfb-run python train.py --stage train_vqvae --base configs/train_motion_vqvae_16.yaml
+python train.py --base configs/train_policy.yaml
