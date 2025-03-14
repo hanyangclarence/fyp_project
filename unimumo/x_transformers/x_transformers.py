@@ -1844,7 +1844,7 @@ class Attention(Module):
         out = self.to_out(out)
 
         if exists(mask):
-            out = einx.where('b n, b n d, -> b n d', mask, out, 0.)
+            out = einx.where('b n, b n d, -> b n d', mask, out, torch.tensor(0., device=device))
 
         if not return_intermediates:
             return out
@@ -2325,12 +2325,14 @@ class AttentionLayers(Module):
         pcd_feature=None,
         instruction_feature=None,
         visual_cross_attn_mask=None,
+        visual_context_mask=None,
     ):
         if self.cross_attend:
             assert rgb_feature is not None, 'RGB feature must be provided for cross attention'
             assert pcd_feature is not None, 'PCD feature must be provided for cross attention'
             assert instruction_feature is not None, 'Instruction feature must be provided for cross attention'
             assert visual_cross_attn_mask is not None, 'Visual cross attention mask must be provided for cross attention'
+            assert visual_context_mask is not None, 'Visual context mask must be provided for cross attention'
         # assert not (self.cross_attend ^ exists(context)), 'context must be passed in if cross_attend is set to True'
         assert not (exists(condition) ^ self.need_condition), 'condition needs to be passed in if using adaptive layernorm or vice versa'
 
@@ -2476,17 +2478,21 @@ class AttentionLayers(Module):
         # go through the attention and feedforward layers
         cross_attn_counter = 0
         cross_attn_mask = None
+
         for ind, (layer_type, skip_combine, (norm, block, residual_fn), layer_dropout, layer_integrator) in enumerate(zip(*layer_variables)):
             if layer_type == 'c':
                 if cross_attn_counter % 3 ==0:
                     context = instruction_feature
                     cross_attn_mask = None
+                    context_mask = None
                 elif cross_attn_counter % 3 == 1:
                     context = rgb_feature
                     cross_attn_mask = visual_cross_attn_mask
+                    context_mask = visual_context_mask
                 elif cross_attn_counter % 3 == 2:
                     context = pcd_feature
                     cross_attn_mask = visual_cross_attn_mask
+                    context_mask = visual_context_mask
                 assert context is not None, f"{cross_attn_counter} context is None"
                 cross_attn_counter += 1
             else:

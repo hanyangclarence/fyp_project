@@ -31,6 +31,7 @@ class PolicyTransformer(pl.LightningModule):
             max_traj_length: int,
             start_idx: int,
             end_idx: int,
+            pad_idx: int,
             encoder_config: dict,
             transformer_config: dict,
             optimizer_config: dict,
@@ -39,6 +40,7 @@ class PolicyTransformer(pl.LightningModule):
         super().__init__()
         self.start_idx = start_idx
         self.end_idx = end_idx
+        self.pad_idx = pad_idx
 
         self.feature_encoder = Encoder(**encoder_config)
 
@@ -61,8 +63,10 @@ class PolicyTransformer(pl.LightningModule):
         instruction = batch["instruction"]  # (B, 53, 512)
         rgb = batch["rgb"]  # (B, T-1, ncam, 3, H, W)
         pcd = batch["pcd"]  # (B, T-1, ncam, 3, H, W)
+        input_mask = batch["input_mask"]  # (B, (T-1) * 4)
+        context_mask = batch["context_mask"]  # (B, T-1)
 
-        loss = self.forward(traj_code, instruction, rgb, pcd)
+        loss = self.forward(traj_code, instruction, rgb, pcd, input_mask, context_mask)
 
         self.log("train_loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=False)
         self.log("lr", self.trainer.optimizers[0].param_groups[0]["lr"], prog_bar=True, logger=True, on_step=True, on_epoch=False)
@@ -74,8 +78,10 @@ class PolicyTransformer(pl.LightningModule):
         instruction = batch["instruction"]
         rgb = batch["rgb"]
         pcd = batch["pcd"]
+        input_mask = batch["input_mask"]
+        context_mask = batch["context_mask"]
 
-        loss = self.forward(traj_code, instruction, rgb, pcd)
+        loss = self.forward(traj_code, instruction, rgb, pcd, input_mask, context_mask)
 
         self.log("val_loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
 
@@ -101,8 +107,10 @@ class PolicyTransformer(pl.LightningModule):
             mask[i * 4: (i + 1) * 4, :(i + 1) * 4] = True
         return mask.to(self.device)
 
-    def forward(self, traj_code: torch.Tensor, instruction: torch.Tensor, rgb: torch.Tensor, pcd: torch.Tensor):
+    def forward(self, traj_code: torch.Tensor, instruction: torch.Tensor, rgb: torch.Tensor, pcd: torch.Tensor,
+                input_mask: torch.Tensor, visual_context_mask: torch.Tensor):
         # traj_code: (B, T * 4)  instruction: (B, 53, 512)  rgb: (B, T-1, ncam, 3, H, W)  pcd: (B, T-1, ncam, 3, H, W)
+        # input_mask: (B, (T-1) * 4)  context_mask: (B, T-1)
 
         rgb_feature, pcd_feature, instruction_feature = self.encode_inputs(rgb, pcd, instruction)
         # rgb_feature: (B, T-1, ncam * D)  pcd_feature: (B, T-1, ncam * D)  instruction_feature: (B, 53, D)
@@ -113,14 +121,16 @@ class PolicyTransformer(pl.LightningModule):
 
         logits = self.transformer_model.forward(
             inp, rgb_feature=rgb_feature, pcd_feature=pcd_feature, instruction_feature=instruction_feature,
-            visual_cross_attn_mask=visual_cross_attn_mask, attn_mask=self_attn_mask
+            visual_cross_attn_mask=visual_cross_attn_mask, attn_mask=self_attn_mask, mask=input_mask,
+            visual_context_mask=visual_context_mask
         )
 
         loss_fn = F.cross_entropy if not self.transformer_model.output_is_log_prob else F.nll_loss
 
         loss = loss_fn(
             einops.rearrange(logits, 'b n c -> b c n'),
-            target
+            target,
+            ignore_index=self.pad_idx
         )
 
         return loss
