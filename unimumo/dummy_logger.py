@@ -83,7 +83,7 @@ class Logger(Callback):
 
             # run each segment of the trajectory
             for t in range(rgb.shape[1]):
-                code = rgb[b:b+1, t*4:(t+1)*4]  # (1, 4)
+                code = traj_code[b:b+1, t*4:(t+1)*4]  # (1, 4)
                 if torch.any(code >= self.codebook_size):
                     print(f"Invalid codebook index in trajectory code: {code}")
                 traj_recon = self.vqvae.decode(code[None, ...])  # (1, 16, 8)
