@@ -14,8 +14,8 @@ from rlbench.demo import Demo
 
 from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, keypoint_discovery, interpolate_trajectory, load_depth, load_rgb, get_point_cloud
 
-MIN_DELTA_TRANS = 0.03
-MIN_DELTA_ROT = 0.2
+MIN_DELTA_TRANS = 0.05
+MIN_DELTA_ROT = 0.4
 
 
 class MotionVQVAEDataset(Dataset):

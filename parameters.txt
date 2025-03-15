@@ -96,3 +96,8 @@ use chunk size 4, 4 chunk per traj, but only one observation per chunk
 # train_motion_vqvae_19.yaml
 from v18
 use new dataloader
+
+
+# train_motion_vqvae_20.yaml
+from v19
+but use one chunk per traj
