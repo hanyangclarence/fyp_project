@@ -1,3 +1,4 @@
+import os
 from typing import Any
 from omegaconf import OmegaConf
 import torch
@@ -82,6 +83,7 @@ class Logger(Callback):
             task._scene.register_step_callback(tr.take_snap)
 
             # run each segment of the trajectory
+            os.makedirs(pjoin(logger_dir, "visualize_data"), exist_ok=True)
             for t in range(rgb.shape[1]):
                 code = traj_code[b:b+1, t*4:(t+1)*4]  # (1, 4)
                 if torch.any(code >= self.codebook_size):
