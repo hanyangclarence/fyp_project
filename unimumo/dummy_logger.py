@@ -226,9 +226,13 @@ class Logger(Callback):
         traj_recon[:, -1] = (traj_recon[:, -1] > 0.5).astype(np.float32)
         traj_recon[:, 3:7] /= np.linalg.norm(traj_recon[:, 3:7], axis=1, keepdims=True)
 
-        obs = None
-        for action in traj_recon:
-            obs, _, _, _ = move(action, collision_checking=False)
+        try:
+            obs = None
+            for action in traj_recon:
+                obs, _, _, _ = move(action, collision_checking=False)
+        except Exception as e:
+            print(f"Error executing trajectory: {e}")
+            return None
 
         return self.obs_to_rgb_pcd(obs)
 
