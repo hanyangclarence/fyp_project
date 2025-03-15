@@ -41,7 +41,7 @@ class Logger(Callback):
             self.vqvae = None
             self.codebook_size = -1
 
-    def visualize_data(self, batch, global_step, split: str, logger_dir: str):
+    def visualize_dataset(self, batch, global_step, split: str, logger_dir: str):
         env = RLBenchEnv(
             data_path=pjoin(self.rlb_config["data_path"], split),
             image_size=[int(x) for x in self.rlb_config["image_size"].split(",")],
@@ -138,5 +138,5 @@ class Logger(Callback):
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any, batch_idx: int
     ) -> None:
         if self.visualize_data and batch_idx % self.train_save_freq == 0:
-            self.visualize_data(batch, trainer.global_step, "train", pl_module.logger.log_dir)
+            self.visualize_dataset(batch, trainer.global_step, "train", pl_module.logger.log_dir)
 
