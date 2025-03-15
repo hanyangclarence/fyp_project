@@ -106,6 +106,8 @@ class Logger(Callback):
                 observation = observation * np.array([0.229, 0.224, 0.225]) + np.array([0.485, 0.456, 0.406])
                 plt.imsave(pjoin(logger_dir, "visualize_data", f"{split}_{global_step}_{b}_{t}_gt.png"), observation)
 
+        env.env.shutdown()
+
 
     def run_single_trajectory(
             self,
