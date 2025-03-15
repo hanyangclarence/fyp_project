@@ -254,7 +254,7 @@ class Logger(Callback):
     def on_train_batch_end(
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any, batch_idx: int
     ) -> None:
-        if self.visualize_data and batch_idx % self.train_save_freq == 0:
+        if self.visualize_data and trainer.global_step % self.train_save_freq == 0:
             self.visualize_dataset(batch, trainer.global_step, "train", pl_module.logger.log_dir)
-        if self.save_rollout and batch_idx % self.train_save_freq == 0:
+        if self.save_rollout and trainer.global_step % self.train_save_freq == 0:
             self.run_rollout(batch, trainer.global_step, "train", pl_module)
