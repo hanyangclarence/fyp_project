@@ -86,8 +86,9 @@ class Logger(Callback):
                 code = traj_code[b:b+1, t*4:(t+1)*4]  # (1, 4)
                 if torch.any(code >= self.codebook_size):
                     print(f"Invalid codebook index in trajectory code: {code}")
-                traj_recon = self.vqvae.decode(code[None, ...])  # (1, 16, 8)
-                traj_recon = traj_recon.squeeze(0).cpu().numpy()  # (16, 8)
+                with torch.no_grad():
+                    traj_recon = self.vqvae.decode(code[None, ...])  # (1, 16, 8)
+                    traj_recon = traj_recon.squeeze(0).detach().cpu().numpy()  # (16, 8)
 
                 try:
                     self.run_single_trajectory(env, traj_recon, task, task_str, var, eps, tr)
