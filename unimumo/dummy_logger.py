@@ -88,17 +88,18 @@ class Logger(Callback):
                 code = traj_code[b:b+1, t*4:(t+1)*4]  # (1, 4)
                 if torch.any(code >= self.codebook_size):
                     print(f"Invalid codebook index in trajectory code: {code}")
-                with torch.no_grad():
-                    traj_recon = self.vqvae.decode(code[None, ...])  # (1, 16, 8)
-                    traj_recon = traj_recon.squeeze(0).detach().cpu().numpy()  # (16, 8)
+                else:
+                    with torch.no_grad():
+                        traj_recon = self.vqvae.decode(code[None, ...])  # (1, 16, 8)
+                        traj_recon = traj_recon.squeeze(0).detach().cpu().numpy()  # (16, 8)
 
-                try:
-                    self.run_single_trajectory(env, traj_recon, task, task_str, var, eps, tr)
-                    save_path = pjoin(logger_dir, "visualize_data", f"{split}_{global_step}_{b}_{t}")
-                    tr.save(save_path)
-                except Exception as e:
-                    print(f"Error running recon trajectory: {e}")
-                    tr._snaps = {cam_name: [] for cam_name in tr._cams_motion.keys()}
+                    try:
+                        self.run_single_trajectory(env, traj_recon, task, task_str, var, eps, tr)
+                        save_path = pjoin(logger_dir, "visualize_data", f"{split}_{global_step}_{b}_{t}")
+                        tr.save(save_path)
+                    except Exception as e:
+                        print(f"Error running recon trajectory: {e}")
+                        tr._snaps = {cam_name: [] for cam_name in tr._cams_motion.keys()}
 
                 # save the ground truth image
                 observation = rgb[b, t] # (3, H, W)
