@@ -84,6 +84,7 @@ class Logger(Callback):
 
             # run each segment of the trajectory
             os.makedirs(pjoin(logger_dir, "visualize_data"), exist_ok=True)
+            os.makedirs(pjoin(logger_dir, "visualize_data", f"{split}_{global_step}_{b}"), exist_ok=True)
             for t in range(rgb.shape[1]):
                 code = traj_code[b:b+1, t*4:(t+1)*4]  # (1, 4)
                 if torch.any(code >= self.codebook_size):
@@ -95,7 +96,8 @@ class Logger(Callback):
 
                     try:
                         self.run_single_trajectory(env, traj_recon, task, task_str, var, eps, tr)
-                        save_path = pjoin(logger_dir, "visualize_data", f"{split}_{global_step}_{b}_{t}")
+                        save_path = pjoin(logger_dir, "visualize_data", f"{split}_{global_step}_{b}", f"{t}")
+                        print(f"Saving video to {save_path}")
                         tr.save(save_path)
                     except Exception as e:
                         print(f"Error running recon trajectory: {e}")
@@ -105,7 +107,8 @@ class Logger(Callback):
                 observation = rgb[b, t] # (3, H, W)
                 observation = observation.permute(1, 2, 0).cpu().numpy()  # (H, W, 3)
                 observation = observation * np.array([0.229, 0.224, 0.225]) + np.array([0.485, 0.456, 0.406])
-                plt.imsave(pjoin(logger_dir, "visualize_data", f"{split}_{global_step}_{b}_{t}_gt.png"), observation)
+                plt.imsave(pjoin(logger_dir, "visualize_data", f"{split}_{global_step}_{b}", f"{t}.png"), observation)
+                print(f"Saved image to {pjoin(logger_dir, 'visualize_data', f'{split}_{global_step}_{b}', f'{t}.png')}")
 
         env.env.shutdown()
 
