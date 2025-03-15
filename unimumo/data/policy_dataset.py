@@ -125,6 +125,9 @@ class PolicyDataset(Dataset):
             "pcd": pcd,  # (T'-1, n_cameras, 3, H, W)
             "input_mask": input_mask,  # ((T'-1) * 4)
             "context_mask": context_mask,  # (T'-1)
+            "task_str": task,  # str
+            "variation": var,  # int
+            "episode": eps,  # int
         }
 
 
