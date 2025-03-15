@@ -148,6 +148,9 @@ class Logger(Callback):
                 rgb: np.ndarray = obs[-1]  # the last camera view, (H, W, 3)
                 plt.imsave(pjoin(save_dir, f"{split}_{global_step}_{b}", f"{t}.png"), rgb)
 
+        self.env.env.shutdown()
+        self.env = None
+
 
     def run_single_trajectory(
             self,
