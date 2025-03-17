@@ -118,6 +118,7 @@ class Logger(Callback):
 
 
     def run_rollout(self, batch, global_step, split: str, pl_module: "pl.LightningModule"):
+        print(f"Running rollout for {split} data at global step {global_step}")
         self.env = RLBenchEnv(
             data_path=pjoin(self.rlb_config["data_path"], split),
             image_size=[int(x) for x in self.rlb_config["image_size"].split(",")],
@@ -150,6 +151,7 @@ class Logger(Callback):
 
         self.env.env.shutdown()
         self.env = None
+        print(f"Rollout for {split} data at global step {global_step} finished")
 
 
     def run_single_trajectory(
