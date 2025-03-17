@@ -34,9 +34,9 @@ model:
         activation: 'relu'
     quantizer_config:
       dimension: 512
-      n_q: 1
+      n_q: 4
       q_dropout: False,
-      bins: 1024
+      bins: 512
     optimizer_config:
       optimizer:
         target: AdamW
