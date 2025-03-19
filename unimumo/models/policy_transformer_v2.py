@@ -228,7 +228,7 @@ class PolicyTransformer(pl.LightningModule):
         assert traj_code.shape[0] == rgb.shape[0] == pcd.shape[0], f"Batch size mismatch: {traj_code.shape[0]} {rgb.shape[0]} {pcd.shape[0]}"
 
         out = torch.ones((1, 1), dtype=torch.long, device=self.device) * self.start_idx
-        for i in range(len(traj_code.shape[1])):
+        for i in range(traj_code.shape[1]):
             sample = traj_code[:, i:i+1]  # (1, 1)
 
             out = torch.cat([out, sample], dim=1)
