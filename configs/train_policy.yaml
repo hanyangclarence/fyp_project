@@ -65,8 +65,8 @@ lightning:
         save_rollout: True
         visualize_data: False
         save_num: 1
-        train_save_freq: 8000
-        val_save_freq: 8000
+        train_save_freq: 10000
+        val_save_freq: 10000
         vqvae_config: "configs/train_motion_vqvae_19.yaml"
         vqvae_ckpt_path: "pretrained/motion_vqvae.ckpt"
         rlb_config:
