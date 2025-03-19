@@ -60,7 +60,7 @@ data:
 lightning:
   callbacks:
     video_logger:
-      target: unimumo.dummy_logger.Logger
+      target: unimumo.policy_logger.Logger
       params:
         save_rollout: True
         visualize_data: False

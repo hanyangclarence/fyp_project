@@ -108,3 +108,8 @@ so I change to 4 layers of codebook
 # train_motion_vqvae_21.yaml
 from 19
 use dataset v3: use fixed length of 16 actions, or 4 tokens, to represent each keypoint
+later change to 8 actions, or 2 tokens, to represent each keypoint
+
+
+# policy v2
+use flattened code

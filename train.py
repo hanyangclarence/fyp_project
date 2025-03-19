@@ -148,6 +148,8 @@ def data_collate(batch):
         adapted_batch["input_mask"] = torch.stack([b['input_mask'] for b in notnone_batches])  # (B, (T'-1) * 4)
     if all(["context_mask" in b.keys() for b in notnone_batches]):
         adapted_batch["context_mask"] = torch.stack([b['context_mask'] for b in notnone_batches])  # (B, T'-1)
+    if all(["traj_input" in b.keys() for b in notnone_batches]):
+        adapted_batch["traj_input"] = torch.stack([b['traj_input'] for b in notnone_batches])  # (B, T' * 4)
 
     return adapted_batch
 

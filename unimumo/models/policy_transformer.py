@@ -153,9 +153,9 @@ class PolicyTransformer(pl.LightningModule):
 
         out = torch.ones((1, 4), dtype=torch.long, device=self.device) * self.start_idx
         for _ in tqdm(range(self.max_traj_length), desc="Generating"):
-            x = out[:, -4 * self.input_traj_length:]  # (1, 4 * T)
-            rgb_context = rgb[:, -self.input_traj_length:]  # (1, T, ncam, 3, H, W)
-            pcd_context = pcd[:, -self.input_traj_length:]  # (1, T, ncam, 3, H, W)
+            x = out[:, -4 * (self.input_traj_length - 1):]  # (1, 4 * T)
+            rgb_context = rgb[:, -(self.input_traj_length - 1):]  # (1, T, ncam, 3, H, W)
+            pcd_context = pcd[:, -(self.input_traj_length - 1):]  # (1, T, ncam, 3, H, W)
 
             rgb_feature, pcd_feature, instruction_feature = self.encode_inputs(rgb_context, pcd_context, instruction)
             visual_cross_attn_mask = self.get_visual_cross_attn_mask(rgb_feature.shape[1])
@@ -189,6 +189,34 @@ class PolicyTransformer(pl.LightningModule):
             rgb = torch.cat([rgb, new_rgb], dim=1)  # (1, T+1, ncam, 3, H, W)
             pcd = torch.cat([pcd, new_pcd], dim=1)
             out = torch.cat([out, sample], dim=1)  # (1, 4 * (T+1))
+
+        rgb = einops.rearrange(rgb[0], "t ncam c h w -> t ncam h w c").cpu().numpy()
+        return rgb
+
+    @torch.no_grad()
+    def rollout_gt(self, traj_code: torch.Tensor, rgb: torch.Tensor, pcd: torch.Tensor,
+                   execute_function: tp.Callable):
+        assert traj_code.shape[0] == 1, f"Batch size must be 1, got {traj_code.shape[0]}"
+        assert traj_code.shape[0] == rgb.shape[0] == pcd.shape[0], f"Batch size mismatch: {traj_code.shape[0]} {rgb.shape[0]} {pcd.shape[0]}"
+
+        out = torch.ones((1, 4), dtype=torch.long, device=self.device) * self.start_idx
+        for i in range(self.max_traj_length):
+            sample = traj_code[:, 4 * i: 4 * (i + 1)]
+
+            if torch.all(sample == self.end_idx):
+                new_rgb, _ = execute_function(out[:, -8:-4], False)
+                rgb = torch.cat([rgb, new_rgb], dim=1)
+                print("End token reached!")
+                break
+
+            ret_value = execute_function(sample, True)
+            if ret_value is None:
+                continue
+
+            new_rgb, new_pcd = ret_value
+            rgb = torch.cat([rgb, new_rgb], dim=1)
+            pcd = torch.cat([pcd, new_pcd], dim=1)
+            out = torch.cat([out, sample], dim=1)
 
         rgb = einops.rearrange(rgb[0], "t ncam c h w -> t ncam h w c").cpu().numpy()
         return rgb
