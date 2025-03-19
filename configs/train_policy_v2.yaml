@@ -34,7 +34,7 @@ model:
 data:
   target: train.DataModuleFromConfig
   params:
-    batch_size: 4
+    batch_size: 3
     wrap: True
     num_workers: 4
     train:
@@ -68,8 +68,8 @@ lightning:
         save_rollout: True
         visualize_data: False
         save_num: 1
-        train_save_freq: 10000
-        val_save_freq: 10000
+        train_save_freq: 13000
+        val_save_freq: 13000
         vqvae_config: "configs/train_motion_vqvae_19.yaml"
         vqvae_ckpt_path: "pretrained/motion_vqvae.ckpt"
         rlb_config:
