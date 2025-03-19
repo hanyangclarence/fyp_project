@@ -233,7 +233,7 @@ class PolicyTransformer(pl.LightningModule):
 
             out = torch.cat([out, sample], dim=1)
 
-            if torch.all(out[:, -self.chunk_size:] == self.end_idx) or i == len(traj_code.shape[1]) - 1:
+            if torch.all(out[:, -self.chunk_size:] == self.end_idx):
                 new_rgb, _ = execute_function(out[:, -self.chunk_size * 2:-self.chunk_size], False)
                 rgb = torch.cat([rgb, new_rgb], dim=1)
                 print("End token reached!")
