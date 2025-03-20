@@ -143,7 +143,7 @@ class MotionVQVAEDataset(Dataset):
                 final_indices = [start_frame] * (self.chunk_size * self.n_chunk_per_traj)
             else:
                 len_sparce = self.chunk_size * self.n_chunk_per_traj
-                delta = (end_frame - 1 - start_frame) / (len_sparce - 1)
+                delta = (end_frame - start_frame) / (len_sparce - 1)
 
                 final_indices = []
                 for num_delta in range(len_sparce):
