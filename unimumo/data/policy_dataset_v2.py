@@ -128,6 +128,8 @@ class PolicyDataset(Dataset):
             context_mask = torch.ones(self.traj_length, dtype=torch.bool)
             context_mask[-pad_length:] = False  # (T', )
 
+        assert rgb.shape[0] == self.traj_length, f"rgb shape {rgb.shape} does not match traj_length {self.traj_length}"
+
         return {
             "trajectory": traj_code_target,  # (T' * 4)
             "traj_input": traj_code_input,  # (T' * 4)
