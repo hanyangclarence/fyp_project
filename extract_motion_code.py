@@ -1,20 +1,14 @@
-import pytorch_lightning as pl
 import argparse
 
-import torch
 from omegaconf import OmegaConf
 import os
 import torch
 import numpy as np
-from tqdm import tqdm
 
-from pyrep.objects.dummy import Dummy
-from pyrep.objects.vision_sensor import VisionSensor
 
 from unimumo.util import instantiate_from_config, load_model_from_config
 from unimumo.data.motion_vqvae_dataset import MotionVQVAEDataset
-from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, Mover, task_file_to_task_class, traj_euler_to_quat
-from unimumo.rlbench.utils_with_recorder import TaskRecorder, StaticCameraMotion, CircleCameraMotion, AttachedCameraMotion
+from unimumo.rlbench.utils_with_rlbench import RLBenchEnv
 
 
 START_TOKEN = 512

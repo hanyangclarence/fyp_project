@@ -41,7 +41,7 @@ data:
       target: unimumo.data.policy_dataset_v2.PolicyDataset
       params:
         split: "train"
-        motion_code_dir: "data/motion_code"
+        motion_code_dir: "data/motion_code_v14"
         visual_data_dir: "data/observations"
         instruction_path: "data/instructions.pkl"
         traj_length: 4
@@ -52,7 +52,7 @@ data:
       target: unimumo.data.policy_dataset_v2.PolicyDataset
       params:
         split: "val"
-        motion_code_dir: "data/motion_code"
+        motion_code_dir: "data/motion_code_v14"
         visual_data_dir: "data/observations"
         instruction_path: "data/instructions.pkl"
         traj_length: 4
