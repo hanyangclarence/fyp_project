@@ -41,7 +41,7 @@ data:
       params:
         split: "train"
         motion_code_dir: "data/motion_code_v14"
-        visual_data_dir: "data/observations"
+        visual_data_dir: "data/observations_v14"
         instruction_path: "data/instructions.pkl"
         traj_length: 4
         start_idx: 512
@@ -51,7 +51,7 @@ data:
       params:
         split: "val"
         motion_code_dir: "data/motion_code_v14"
-        visual_data_dir: "data/observations"
+        visual_data_dir: "data/observations_v14"
         instruction_path: "data/instructions.pkl"
         traj_length: 4
         start_idx: 512
