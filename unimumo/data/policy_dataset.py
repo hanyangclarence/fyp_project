@@ -82,6 +82,8 @@ class PolicyDataset(Dataset):
         ).squeeze()  # (T * 4)  where each timestep is represented by 4 codes
         code_indices = np.load(pjoin(self.motion_code_dir, self.split, task, f"var_{var}_eps_{eps}", "indices.npy"))  # (T,)
 
+        assert code_indices.shape[0] == full_traj_code.shape[0] // 4 == len(full_obs), f"Code indices shape {code_indices.shape} does not match full_traj_code shape {full_traj_code.shape} or full_obs shape {full_obs.shape}"
+
         # randomly sample a trajectory
         if len(code_indices) - self.traj_length >= -1:
             input_mask = torch.ones((self.traj_length - 1) * 4, dtype=torch.bool)  # ((T'-1) * 4)

@@ -17,6 +17,8 @@ from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, keypoint_discovery, i
 MIN_DELTA_TRANS = 0.05
 MIN_DELTA_ROT = 0.4
 
+motion_code_dir_name = "motion_code_v14"
+save_filename = "observations_v14"
 
 class MotionVQVAEDataset(Dataset):
     def __init__(
@@ -117,7 +119,7 @@ class MotionVQVAEDataset(Dataset):
             "episode": eps,  # int
         }
 
-        obs_ids_path = f"data/motion_code/{self.split}/{task}/var_{var}_eps_{eps}/indices.npy"
+        obs_ids_path = f"data/{motion_code_dir_name}/{self.split}/{task}/var_{var}_eps_{eps}/indices.npy"
         obs_ids = np.load(obs_ids_path)
 
         if self.apply_rgb:
@@ -300,7 +302,7 @@ class MotionVQVAEDataset(Dataset):
 
 if __name__ == "__main__":
 
-    save_dir = "data/observations"
+    save_dir = f"data/{save_filename}"
     os.makedirs(save_dir, exist_ok=True)
 
     for split in ["train", "test", "val"]:

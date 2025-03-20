@@ -87,6 +87,7 @@ class PolicyDataset(Dataset):
         code_indices = np.load(pjoin(self.motion_code_dir, self.split, task, f"var_{var}_eps_{eps}", "indices.npy"))  # (T,)
 
         assert self.chunk_size == len(full_traj_code) / len(code_indices), f"chunk size {self.chunk_size} does not match the length of full_traj_code {len(full_traj_code)} and code_indices {len(code_indices)}"
+        assert full_obs.shape[0] == len(code_indices), f"full_obs shape {full_obs.shape} does not match code_indices shape {code_indices.shape}"
 
         # randomly sample a trajectory
         if len(code_indices) - self.traj_length >= 0:
