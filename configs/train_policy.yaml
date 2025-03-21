@@ -67,8 +67,8 @@ lightning:
         save_num: 1
         train_save_freq: 10000
         val_save_freq: 10000
-        vqvae_config: "configs/train_motion_vqvae_19.yaml"
-        vqvae_ckpt_path: "pretrained/motion_vqvae.ckpt"
+        vqvae_config: "configs/train_motion_vqvae_21.yaml"
+        vqvae_ckpt_path: "training_logs/2025-03-16T09-25-42_train_motion_vqvae_14_train_val/checkpoints/epoch=011224.ckpt"
         rlb_config:
           data_path: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
           image_size: "256,256"
