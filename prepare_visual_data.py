@@ -216,6 +216,9 @@ class MotionVQVAEDataset(Dataset):
             start_frame = key_frame_ids[i]
             end_frame = key_frame_ids[i + 1]
 
+            if i == len(key_frame_ids) - 2:
+                # always keep the last frame
+                end_frame += 1
             for j in range(start_frame, end_frame):
                 obs_dict, action, proprioception = self.env.get_obs_action(demo[j])  # action: (8), proprioception: (16)
 
