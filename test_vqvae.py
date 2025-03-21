@@ -121,10 +121,10 @@ if __name__ == '__main__':
                 traj_chunk = gt_traj[:, sec_start:sec_start+traj_length]
                 code = model.encode(traj_chunk)
                 recon_traj = model.decode(code)
-                if sec_start == 0:
+                if sec_start == gt_traj.shape[1] - traj_length:
                     all_recon_traj.append(recon_traj)
                 else:
-                    all_recon_traj.append(recon_traj[:, -chunk_size:, :])
+                    all_recon_traj.append(recon_traj[:, :chunk_size])
             recon_traj = torch.cat(all_recon_traj, dim=1)
             print(f"GT shape: {gt_traj.shape}, recon shape: {recon_traj.shape}")
 
