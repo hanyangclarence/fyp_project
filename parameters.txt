@@ -127,3 +127,7 @@ use the code of vqvae v21: 8 actions, or 2 tokens, to represent each keypoint
 # policy v4
 from v3
 use less learning rate, smaller model and larger batch size
+
+# policy v5
+from v4
+further smaller
