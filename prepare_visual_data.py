@@ -318,7 +318,7 @@ if __name__ == "__main__":
             load_proprioception=True,
             use_chunk=False,
             chunk_size=4,
-            n_chunk_per_traj=4,
+            n_chunk_per_traj=2,
             compression_rate=4,
             load_sparce=False,
             load_full_traj=True
