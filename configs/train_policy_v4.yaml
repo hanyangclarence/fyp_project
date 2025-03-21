@@ -36,7 +36,7 @@ model:
 data:
   target: train.DataModuleFromConfig
   params:
-    batch_size: 4
+    batch_size: 3
     wrap: True
     num_workers: 4
     train:
