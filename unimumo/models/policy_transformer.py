@@ -173,8 +173,12 @@ class PolicyTransformer(pl.LightningModule):
             sample = torch.tensor(sample, dtype=torch.long, device=self.device).unsqueeze(0)  # (1, 4)
 
             if torch.all(sample == self.end_idx):
-                new_rgb, _ = execute_function(out[:, -8:-4], False)
-                rgb = torch.cat([rgb, new_rgb], dim=1)
+                ret_value = execute_function(out[:, -8:-4], False)
+                if ret_value is None:
+                    pass
+                else:
+                    new_rgb, _ = ret_value
+                    rgb = torch.cat([rgb, new_rgb], dim=1)
                 print("End token reached!")
                 break
 
@@ -204,8 +208,12 @@ class PolicyTransformer(pl.LightningModule):
             sample = traj_code[:, 4 * i: 4 * (i + 1)]
 
             if torch.all(sample == self.end_idx):
-                new_rgb, _ = execute_function(out[:, -8:-4], False)
-                rgb = torch.cat([rgb, new_rgb], dim=1)
+                ret_value = execute_function(out[:, -8:-4], False)
+                if ret_value is None:
+                    pass
+                else:
+                    new_rgb, _ = ret_value
+                    rgb = torch.cat([rgb, new_rgb], dim=1)
                 print("End token reached!")
                 break
 
