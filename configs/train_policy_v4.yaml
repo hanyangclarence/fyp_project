@@ -13,11 +13,11 @@ model:
     pad_idx: 514
     encoder_config:
       image_size: [3, 256, 256]
-      embedding_dim: 160
+      embedding_dim: 108
       n_cameras: 4
       rgb_encoder: "resnet18"
     transformer_config:
-      dim: 384
+      dim: 256
       depth: 12
       heads: 8
       cross_attend: True
@@ -25,18 +25,18 @@ model:
       optimizer:
         target: AdamW
         params:
-          lr: 5e-5
+          lr: 1e-5
           betas: [ 0.9, 0.99 ]
           weight_decay: 0.0
       lr_scheduler:
         target: CosineAnnealingLR
         params:
-          T_max: 20000  # not sure about this
+          T_max: 1000  # not sure about this
           eta_min: 1e-6
 data:
   target: train.DataModuleFromConfig
   params:
-    batch_size: 3
+    batch_size: 4
     wrap: True
     num_workers: 4
     train:

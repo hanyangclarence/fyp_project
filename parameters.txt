@@ -120,3 +120,10 @@ policy v1
 use flattened code
 2025-03-19T15-34-20_train_policy_v2: train on v19 code data, totally not working
 2025-03-21T00-59-17_train_policy_v2: train on v14 data, also not working
+
+# policy v3
+use the code of vqvae v21: 8 actions, or 2 tokens, to represent each keypoint
+
+# policy v4
+from v3
+use less learning rate, smaller model and larger batch size
