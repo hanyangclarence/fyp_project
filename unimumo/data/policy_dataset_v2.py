@@ -26,7 +26,7 @@ class PolicyDataset(Dataset):
             visual_data_dir: str,
             instruction_path: str,
             traj_length: int,
-            chunk_size: int,
+            n_chunk_per_traj: int,
             start_idx: int = 512,
             end_idx: int = 513,
             pad_idx: int = 514,
@@ -35,7 +35,7 @@ class PolicyDataset(Dataset):
         self.motion_code_dir = motion_code_dir
         self.visual_data_dir = visual_data_dir
         self.traj_length = traj_length
-        self.chunk_size = chunk_size
+        self.n_chunk_per_traj = n_chunk_per_traj
 
         self.start_idx = start_idx
         self.end_idx = end_idx
@@ -86,26 +86,26 @@ class PolicyDataset(Dataset):
         ).squeeze()  # (T * 4)  where each timestep is represented by 4 codes
         code_indices = np.load(pjoin(self.motion_code_dir, self.split, task, f"var_{var}_eps_{eps}", "indices.npy"))  # (T,)
 
-        assert self.chunk_size == len(full_traj_code) / len(code_indices), f"chunk size {self.chunk_size} does not match the length of full_traj_code {len(full_traj_code)} and code_indices {len(code_indices)}"
+        assert self.n_chunk_per_traj == len(full_traj_code) / len(code_indices), f"chunk size {self.n_chunk_per_traj} does not match the length of full_traj_code {len(full_traj_code)} and code_indices {len(code_indices)}"
         assert full_obs.shape[0] == len(code_indices), f"full_obs shape {full_obs.shape} does not match code_indices shape {code_indices.shape}"
 
         # randomly sample a trajectory
         if len(code_indices) - self.traj_length >= 0:
-            input_mask = torch.ones(self.traj_length * self.chunk_size, dtype=torch.bool)  # (T' * 4)
+            input_mask = torch.ones(self.traj_length * self.n_chunk_per_traj, dtype=torch.bool)  # (T' * 4)
             start_idx = random.randint(0, len(code_indices) - self.traj_length)
             end_idx = start_idx + self.traj_length
 
-            traj_code_target = full_traj_code[start_idx * self.chunk_size:end_idx * self.chunk_size]  # (T' * 4)
+            traj_code_target = full_traj_code[start_idx * self.n_chunk_per_traj:end_idx * self.n_chunk_per_traj]  # (T' * 4)
             if start_idx == 0:
                 traj_code_input = torch.cat([
                     torch.tensor([self.start_idx]), traj_code_target[:-1]
                 ])
             else:
-                traj_code_input = full_traj_code[start_idx * self.chunk_size - 1:end_idx * self.chunk_size - 1]  # (T' * 4)
+                traj_code_input = full_traj_code[start_idx * self.n_chunk_per_traj - 1:end_idx * self.n_chunk_per_traj - 1]  # (T' * 4)
 
             # some sanity check
             if end_idx == len(code_indices):
-                assert torch.all(traj_code_target[-self.chunk_size:] == self.end_idx), f"last code is not end token: {traj_code_target[-self.chunk_size:]}"
+                assert torch.all(traj_code_target[-self.n_chunk_per_traj:] == self.end_idx), f"last code is not end token: {traj_code_target[-self.n_chunk_per_traj:]}"
 
             rgb_pcd = full_obs[start_idx:end_idx]  # (T', n_cameras, 6, H, W)
             rgb = rgb_pcd[:, :, :3]  # (T', n_cameras, 3, H, W)
@@ -115,13 +115,13 @@ class PolicyDataset(Dataset):
             # pad the trajectory
             pad_length = self.traj_length - len(code_indices)
             traj_code_target = torch.cat([
-                full_traj_code, torch.tensor([self.pad_idx] * self.chunk_size * pad_length)
+                full_traj_code, torch.tensor([self.pad_idx] * self.n_chunk_per_traj * pad_length)
             ])  # (T' * 4)
             traj_code_input = torch.cat([
-                torch.tensor([self.start_idx]), full_traj_code[:-1], torch.tensor([self.pad_idx] * self.chunk_size * pad_length)
+                torch.tensor([self.start_idx]), full_traj_code[:-1], torch.tensor([self.pad_idx] * self.n_chunk_per_traj * pad_length)
             ])  # (T' * 4)
-            input_mask = torch.ones(self.traj_length * self.chunk_size, dtype=torch.bool)  # (T' * 4)
-            input_mask[-self.chunk_size * pad_length:] = False
+            input_mask = torch.ones(self.traj_length * self.n_chunk_per_traj, dtype=torch.bool)  # (T' * 4)
+            input_mask[-self.n_chunk_per_traj * pad_length:] = False
 
             rgb_pcd = torch.cat([full_obs, torch.zeros((pad_length, n_cameras, 6, H, W))], dim=0)  # (T', n_cameras, 6, H, W)
             rgb = rgb_pcd[:, :, :3]  # (T', n_cameras, 3, H, W)

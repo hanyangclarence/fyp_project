@@ -214,7 +214,7 @@ class Logger(Callback):
         move = Mover(task, max_tries=1)
         rgb, pcd = self.obs_to_rgb_pcd(obs)
 
-        exe_fn = lambda code, run_partial: self.execute_function(move, code, run_partial)
+        exe_fn = lambda code, start_idx, end_idx: self.execute_function(move, code, start_idx, end_idx)
 
         obs_list = pl_module.generate(
             instruction=instruction, rgb=rgb, pcd=pcd, execute_function=exe_fn
@@ -235,16 +235,16 @@ class Logger(Callback):
         move = Mover(task, max_tries=1)
         rgb, pcd = self.obs_to_rgb_pcd(obs)
 
-        exe_fn = lambda code, run_partial: self.execute_function(move, code, run_partial)
+        exe_fn = lambda code, start_idx, end_idx: self.execute_function(move, code, start_idx, end_idx)
 
         obs_list = pl_module.rollout_gt(traj_code=gt_code, rgb=rgb, pcd=pcd, execute_function=exe_fn)
 
         return obs_list
 
 
-    def execute_function(self, move: Mover, code, run_partial=True):
+    def execute_function(self, move: Mover, code, start_idx, end_idx):
         # code: (1, 4)
-        assert code.shape == (1, 4), f"Invalid code shape: {code.shape}"
+        assert len(code.shape) == 2 and code.shape[0] == 1, f"Invalid code shape: {code.shape}"
 
         if torch.any(code >= self.codebook_size):
             print(f"Invalid codebook index in trajectory code: {code}")
@@ -254,12 +254,7 @@ class Logger(Callback):
             traj_recon = self.vqvae.decode(code[None, ...])  # (1, 16, 8)
             traj_recon = traj_recon.squeeze(0).detach().cpu().numpy()  # (16, 8)
 
-        if run_partial:
-            # run the first few steps
-            traj_recon = traj_recon[:4]
-        else:
-            # run the remaining steps
-            traj_recon = traj_recon[4:]
+        traj_recon = traj_recon[start_idx:end_idx]
 
         traj_recon[:, -1] = (traj_recon[:, -1] > 0.5).astype(np.float32)
         traj_recon[:, 3:7] /= np.linalg.norm(traj_recon[:, 3:7], axis=1, keepdims=True)

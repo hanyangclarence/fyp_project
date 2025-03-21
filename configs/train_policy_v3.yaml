@@ -1,13 +1,13 @@
 model:
-  target: unimumo.models.policy_transformer_v2.PolicyTransformer
+  target: unimumo.models.policy_transformer_v3.PolicyTransformer
   params:
     monitor: "val_loss"
     num_tokens: 515
-    input_traj_length: 4
+    input_traj_length: 6
     max_traj_length: 15
     # the following two values align with the motion vqvae
     chunk_size: 4
-    n_chunk_per_traj: 4
+    n_chunk_per_traj: 2
     start_idx: 512
     end_idx: 513
     pad_idx: 514
@@ -36,7 +36,7 @@ model:
 data:
   target: train.DataModuleFromConfig
   params:
-    batch_size: 3
+    batch_size: 4
     wrap: True
     num_workers: 4
     train:
@@ -46,8 +46,8 @@ data:
         motion_code_dir: "data/motion_code_v14"
         visual_data_dir: "data/observations_v14"
         instruction_path: "data/instructions.pkl"
-        traj_length: 4
-        n_chunk_per_traj: 4
+        traj_length: 6
+        n_chunk_per_traj: 2
         start_idx: 512
         end_idx: 513
     validation:
@@ -57,8 +57,8 @@ data:
         motion_code_dir: "data/motion_code_v14"
         visual_data_dir: "data/observations_v14"
         instruction_path: "data/instructions.pkl"
-        traj_length: 4
-        n_chunk_per_traj: 4
+        traj_length: 6
+        n_chunk_per_traj: 2
         start_idx: 512
         end_idx: 513
 

@@ -37,6 +37,7 @@ class PolicyTransformer(pl.LightningModule):
             end_idx: int,
             pad_idx: int,
             chunk_size: int,
+            n_chunk_per_traj: int,
             encoder_config: dict,
             transformer_config: dict,
             optimizer_config: dict,
@@ -47,6 +48,7 @@ class PolicyTransformer(pl.LightningModule):
         self.end_idx = end_idx
         self.pad_idx = pad_idx
         self.chunk_size = chunk_size
+        self.n_chunk_per_traj = n_chunk_per_traj
 
         self.feature_encoder = Encoder(**encoder_config)
 
@@ -55,7 +57,7 @@ class PolicyTransformer(pl.LightningModule):
         transformer_config["dim_pcd_feature"] = encoder_config["embedding_dim"] * 4
         self.transformer_model = TransformerWrapper(
             num_tokens=num_tokens,
-            max_seq_len=max_traj_length * chunk_size,
+            max_seq_len=max_traj_length * n_chunk_per_traj,
             attn_layers=Decoder(**transformer_config)
         )
         self.input_traj_length = input_traj_length
@@ -117,10 +119,10 @@ class PolicyTransformer(pl.LightningModule):
 
     def get_visual_cross_attn_mask(self, height: int, width: int):
         mask = torch.zeros(height, width, dtype=torch.bool)  # ((T-1) * 4, T-1)
-        n_action = height // self.chunk_size if height % self.chunk_size == 0 else height // self.chunk_size + 1
+        n_action = height // self.n_chunk_per_traj if height % self.n_chunk_per_traj == 0 else height // self.n_chunk_per_traj + 1
         assert width == n_action, f"Width mismatch: {width} {n_action}"
         for i in range(n_action):
-            mask[i * self.chunk_size: (i + 1) * self.chunk_size, :i + 1] = True
+            mask[i * self.n_chunk_per_traj: (i + 1) * self.n_chunk_per_traj, :i + 1] = True
         return mask.to(self.device)
 
     def get_self_attn_mask(self, length: int):
@@ -170,13 +172,13 @@ class PolicyTransformer(pl.LightningModule):
         assert instruction.shape[0] == rgb.shape[0] == pcd.shape[0], f"Batch size mismatch: {instruction.shape[0]} {rgb.shape[0]} {pcd.shape[0]}"
 
         out = torch.ones((1, 1), dtype=torch.long, device=self.device) * self.start_idx  # (1, 1)
-        for i in tqdm(range(self.max_traj_length * self.chunk_size), desc="Generating"):
-            if out.shape[-1] % self.chunk_size == 0:
-                assert out.shape[-1] // self.chunk_size == rgb.shape[1] == pcd.shape[1], f"Length mismatch: {out.shape[1]} {rgb.shape[1]} {pcd.shape[1]}"
-                input_length = self.chunk_size * self.input_traj_length
+        for i in tqdm(range(self.max_traj_length * self.n_chunk_per_traj), desc="Generating"):
+            if out.shape[-1] % self.n_chunk_per_traj == 0:
+                assert out.shape[-1] // self.n_chunk_per_traj == rgb.shape[1] == pcd.shape[1], f"Length mismatch: {out.shape[1]} {rgb.shape[1]} {pcd.shape[1]}"
+                input_length = self.n_chunk_per_traj * self.input_traj_length
             else:
-                assert out.shape[-1] // self.chunk_size + 1 == rgb.shape[1] == pcd.shape[1], f"Length mismatch: {out.shape[1]} {rgb.shape[1]} {pcd.shape[1]}"
-                input_length = self.chunk_size * (self.input_traj_length - 1) + out.shape[-1] % self.chunk_size
+                assert out.shape[-1] // self.n_chunk_per_traj + 1 == rgb.shape[1] == pcd.shape[1], f"Length mismatch: {out.shape[1]} {rgb.shape[1]} {pcd.shape[1]}"
+                input_length = self.n_chunk_per_traj * (self.input_traj_length - 1) + out.shape[-1] % self.n_chunk_per_traj
             x = out[:, -input_length:]  # (1, 4 * T)
             rgb_context = rgb[:, -self.input_traj_length:]  # (1, T, ncam, 3, H, W)
             pcd_context = pcd[:, -self.input_traj_length:]  # (1, T, ncam, 3, H, W)
@@ -197,8 +199,12 @@ class PolicyTransformer(pl.LightningModule):
 
             out = torch.cat([out, sample], dim=1)  # (1, 4 * T + 1)
 
-            if torch.all(out[:, -self.chunk_size:] == self.end_idx):
-                ret_value = execute_function(out[:, -self.chunk_size * 2:-self.chunk_size], False)
+            if torch.all(out[:, -self.n_chunk_per_traj:] == self.end_idx):
+                ret_value = execute_function(
+                    out[:, -self.n_chunk_per_traj * 2:-self.n_chunk_per_traj],
+                    self.chunk_size,
+                    self.chunk_size * self.n_chunk_per_traj
+                )
                 if ret_value is None:
                     pass
                 else:
@@ -207,13 +213,17 @@ class PolicyTransformer(pl.LightningModule):
                 print("End token reached!")
                 break
 
-            if len(out[0, 1:]) % self.chunk_size == 0:
-                ret_value = execute_function(out[:, -self.chunk_size:], True)  # (1, 1, ncam, 3, H, W)  (1, 1, ncam, 3, H, W)
+            if len(out[0, 1:]) % self.n_chunk_per_traj == 0:
+                ret_value = execute_function(
+                    out[:, -self.n_chunk_per_traj:],
+                    0,
+                    self.chunk_size
+                )  # (1, 1, ncam, 3, H, W)  (1, 1, ncam, 3, H, W)
                 if ret_value is None:
                     # skip the current step
 
                     # since the generated code is invalid, we clear up the generated content
-                    out = out[:, :-self.chunk_size]
+                    out = out[:, :-self.n_chunk_per_traj]
 
                     continue
 
@@ -237,8 +247,12 @@ class PolicyTransformer(pl.LightningModule):
 
             out = torch.cat([out, sample], dim=1)
 
-            if torch.all(out[:, -self.chunk_size:] == self.end_idx):
-                ret_value = execute_function(out[:, -self.chunk_size * 2:-self.chunk_size], False)
+            if torch.all(out[:, -self.n_chunk_per_traj:] == self.end_idx):
+                ret_value = execute_function(
+                    out[:, -self.n_chunk_per_traj * 2:-self.n_chunk_per_traj],
+                    self.chunk_size,
+                    self.chunk_size * self.n_chunk_per_traj
+                )
                 if ret_value is None:
                     pass
                 else:
@@ -247,8 +261,12 @@ class PolicyTransformer(pl.LightningModule):
                 print("End token reached!")
                 break
 
-            if len(out[0, 1:]) % self.chunk_size == 0:
-                ret_value = execute_function(out[:, -self.chunk_size:], True)
+            if len(out[0, 1:]) % self.n_chunk_per_traj == 0:
+                ret_value = execute_function(
+                    out[:, -self.n_chunk_per_traj:],
+                    0,
+                    self.chunk_size
+                )
                 if ret_value is None:
                     continue
 

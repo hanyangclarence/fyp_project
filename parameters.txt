@@ -111,5 +111,12 @@ use dataset v3: use fixed length of 16 actions, or 4 tokens, to represent each k
 later change to 8 actions, or 2 tokens, to represent each keypoint
 
 
+policy v1
+2025-03-19T15-24-35_train_policy: train on v19 code data, totally not working
+2025-03-21T00-58-50_train_policy: train on v14 data, also not working
+
+
 # policy v2
 use flattened code
+2025-03-19T15-34-20_train_policy_v2: train on v19 code data, totally not working
+2025-03-21T00-59-17_train_policy_v2: train on v14 data, also not working
