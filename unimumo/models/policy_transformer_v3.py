@@ -201,20 +201,6 @@ class PolicyTransformer(pl.LightningModule):
 
             out = torch.cat([out, sample], dim=1)  # (1, 4 * T + 1)
 
-            if torch.all(out[:, -self.n_chunk_per_traj:] == self.end_idx):
-                ret_value = execute_function(
-                    out[:, -self.n_chunk_per_traj * 2:-self.n_chunk_per_traj],
-                    0,
-                    self.chunk_size * self.n_chunk_per_traj
-                )
-                if ret_value is None:
-                    pass
-                else:
-                    new_rgb, _ = ret_value
-                    rgb = torch.cat([rgb, new_rgb], dim=1)
-                print("End token reached!")
-                break
-
             if len(out[0, 1:]) % self.n_chunk_per_traj == 0:
                 ret_value = execute_function(
                     out[:, -self.n_chunk_per_traj:],
@@ -234,6 +220,10 @@ class PolicyTransformer(pl.LightningModule):
                 rgb = torch.cat([rgb, new_rgb], dim=1)  # (1, T+1, ncam, 3, H, W)
                 pcd = torch.cat([pcd, new_pcd], dim=1)
 
+                if torch.all(sample == self.end_idx):
+                    print("End token reached!")
+                    break
+
         rgb = einops.rearrange(rgb[0], "t ncam c h w -> t ncam h w c").cpu().numpy()
         return rgb
 
@@ -249,20 +239,6 @@ class PolicyTransformer(pl.LightningModule):
 
             out = torch.cat([out, sample], dim=1)
 
-            if torch.all(out[:, -self.n_chunk_per_traj:] == self.end_idx):
-                ret_value = execute_function(
-                    out[:, -self.n_chunk_per_traj * 2:-self.n_chunk_per_traj],
-                    0,
-                    self.chunk_size * self.n_chunk_per_traj
-                )
-                if ret_value is None:
-                    pass
-                else:
-                    new_rgb, _ = ret_value
-                    rgb = torch.cat([rgb, new_rgb], dim=1)
-                print("End token reached!")
-                break
-
             if len(out[0, 1:]) % self.n_chunk_per_traj == 0:
                 ret_value = execute_function(
                     out[:, -self.n_chunk_per_traj:],
@@ -275,6 +251,10 @@ class PolicyTransformer(pl.LightningModule):
                 new_rgb, new_pcd = ret_value
                 rgb = torch.cat([rgb, new_rgb], dim=1)
                 pcd = torch.cat([pcd, new_pcd], dim=1)
+
+                if torch.all(sample == self.end_idx):
+                    print("End token reached!")
+                    break
 
         rgb = einops.rearrange(rgb[0], "t ncam c h w -> t ncam h w c").cpu().numpy()
         return rgb
