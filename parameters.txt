@@ -110,6 +110,10 @@ from 19
 use dataset v3: use fixed length of 16 actions, or 4 tokens, to represent each keypoint
 later change to 8 actions, or 2 tokens, to represent each keypoint
 
+# train_motion_vqvae_22.yaml
+from 21
+use selected tasks and variations
+
 
 policy v1
 2025-03-19T15-24-35_train_policy: train on v19 code data, totally not working
