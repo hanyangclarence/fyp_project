@@ -71,6 +71,9 @@ class MotionVQVAEDataset(Dataset):
                     continue
                 num_episode = len(os.listdir(pjoin(data_dir, split, task, var_folder, "episodes")))
                 for eps in range(num_episode):
+                    if not os.path.exists(pjoin(data_dir, split, task, var_folder, "episodes", f"episode{eps}", "low_dim_obs.pkl")):
+                        continue
+
                     self.all_demos_ids.append((task, var, eps))
 
         self.data = []
