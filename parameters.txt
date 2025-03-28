@@ -135,3 +135,8 @@ use less learning rate, smaller model and larger batch size
 # policy v5
 from v4
 further smaller
+
+# policy v6
+from v3
+use context window of 2
+also train on smaller number of tasks and variations
