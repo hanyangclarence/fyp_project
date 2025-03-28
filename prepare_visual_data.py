@@ -254,7 +254,7 @@ class MotionVQVAEDataset(Dataset):
 
                 # add misc data
                 for k, v in demo[j].misc.items():
-                    if k != "descriptions":
+                    if k != "descriptions" and k != "joint_position_action":
                         misc[k].append(v)
 
             traj_segment = torch.cat(traj_segment, dim=0)  # (n_frames, 8)
@@ -273,7 +273,7 @@ class MotionVQVAEDataset(Dataset):
                         if self.apply_pc:
                             observations["pc"].append(observations["pc"][-1])
                         for k in misc.keys():
-                            if k != "descriptions":
+                            if k != "descriptions" and k != "joint_position_action":
                                 misc[k].append(misc[k][-1])
 
 
