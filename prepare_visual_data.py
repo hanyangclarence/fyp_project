@@ -17,8 +17,8 @@ from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, keypoint_discovery, i
 MIN_DELTA_TRANS = 0.05
 MIN_DELTA_ROT = 0.4
 
-motion_code_dir_name = "motion_code_v21"
-save_filename = "observations_v21"
+motion_code_dir_name = "motion_code_v22"
+save_filename = "observations_v22"
 
 class MotionVQVAEDataset(Dataset):
     def __init__(
@@ -78,6 +78,9 @@ class MotionVQVAEDataset(Dataset):
                 var = int(var_folder.replace("variation", ""))
                 num_episode = len(os.listdir(pjoin(data_dir, split, task, var_folder, "episodes")))
                 for eps in range(num_episode):
+                    if not os.path.exists(pjoin("data", motion_code_dir_name, split, task, f"var_{var}_eps_{eps}", "indices.npy")):
+                        continue
+
                     self.all_demos_ids.append((task, var, eps))
 
         self.data = []
