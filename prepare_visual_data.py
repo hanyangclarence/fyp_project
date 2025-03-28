@@ -210,7 +210,7 @@ class MotionVQVAEDataset(Dataset):
 
         action_traj = []
         observations = {"rgb": [], "depth": [], "pc": []}
-        misc = {k: [] for k in demo[0].misc.keys()}
+        misc = {k: [] for k in demo[0].misc.keys() if k != "joint_position_action"}
         misc["descriptions"] = demo[0].misc["descriptions"]
 
         # process the segment between each pair of key frames: interpolate their length to a multiple of chunk_size
