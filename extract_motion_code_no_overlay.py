@@ -7,7 +7,7 @@ import numpy as np
 
 
 from unimumo.util import instantiate_from_config, load_model_from_config
-from unimumo.data.motion_vqvae_dataset_v3 import MotionVQVAEDataset
+from unimumo.data.motion_vqvae_dataset_v4 import MotionVQVAEDataset
 from unimumo.rlbench.utils_with_rlbench import RLBenchEnv
 
 
