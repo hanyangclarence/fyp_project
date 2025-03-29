@@ -172,7 +172,7 @@ class Logger(Callback):
             os.makedirs(pjoin(save_dir, f"{split}_{global_step}_{b}_gt_obs"), exist_ok=True)
             for t in range(rgb.shape[0]):
                 observation: np.ndarray = rgb[t] # (3, H, W)
-                observation = observation.transpose(1, 2, 0)  # (H, W, 3)
+                observation = observation.transpose(0, 1).transpose(1, 2)  # (H, W, 3)
                 plt.imsave(pjoin(save_dir, f"{split}_{global_step}_{b}_gt_obs", f"{t}.png"), observation)
 
         self.env.env.shutdown()
