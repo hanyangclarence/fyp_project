@@ -177,22 +177,22 @@ if __name__ == '__main__':
                 tr = None
 
             # save ground truth trajectory
-            try:
-                run_single_trajectory(
-                    rlbench_env,
-                    gt_traj,
-                    task,
-                    task_str,
-                    variation,
-                    episode,
-                    tr
-                )
-                tr.save(os.path.join(
-                    save_dir, f"{i}_task_{task_str}_var_{variation}_eps_{episode}_gt.mp4"
-                ))
-            except Exception as e:
-                print(f"Error running GT trajectory: {e}")
-                tr._snaps = {cam_name: [] for cam_name in tr._cams_motion.keys()}
+            # try:
+            #     run_single_trajectory(
+            #         rlbench_env,
+            #         gt_traj,
+            #         task,
+            #         task_str,
+            #         variation,
+            #         episode,
+            #         tr
+            #     )
+            #     tr.save(os.path.join(
+            #         save_dir, f"{i}_task_{task_str}_var_{variation}_eps_{episode}_gt.mp4"
+            #     ))
+            # except Exception as e:
+            #     print(f"Error running GT trajectory: {e}")
+            #     tr._snaps = {cam_name: [] for cam_name in tr._cams_motion.keys()}
 
             reward = 0.0
             try:
