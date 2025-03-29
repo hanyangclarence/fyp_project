@@ -140,3 +140,7 @@ further smaller
 from v3
 use context window of 2
 also train on smaller number of tasks and variations
+
+# policy v7
+from v6
+but only work on close_jar task
