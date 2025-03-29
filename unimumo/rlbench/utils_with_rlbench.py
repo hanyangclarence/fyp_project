@@ -798,7 +798,7 @@ class RLBenchEnv:
             depth=apply_depth,
             mask=False,
             image_size=image_size,
-            render_mode=RenderMode.OPENGL,
+            render_mode=RenderMode.OPENGL3,
             **kwargs,
         )
 
