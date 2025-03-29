@@ -12,7 +12,7 @@ from pyrep.objects.dummy import Dummy
 from pyrep.objects.vision_sensor import VisionSensor
 
 from unimumo.util import instantiate_from_config, load_model_from_config
-from unimumo.data.motion_vqvae_dataset import MotionVQVAEDataset
+from unimumo.data.motion_vqvae_dataset_v4 import MotionVQVAEDataset
 from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, Mover, task_file_to_task_class, traj_euler_to_quat
 from unimumo.rlbench.utils_with_recorder import TaskRecorder, StaticCameraMotion, CircleCameraMotion, AttachedCameraMotion
 
@@ -106,26 +106,31 @@ if __name__ == '__main__':
         variation = batch["variation"]
         episode = batch["episode"]
 
-        # pad the gt_traj to make it length divisible by 4
-        gt_traj_padded = torch.zeros((gt_traj.shape[0] + (chunk_size - gt_traj.shape[0] % chunk_size) % chunk_size, gt_traj.shape[1]))
-        gt_traj_padded[:gt_traj.shape[0], :] = gt_traj
-        gt_traj_padded[gt_traj.shape[0]:, :] = gt_traj[-1]
-        gt_traj = gt_traj_padded
+        assert gt_traj.shape[0] % (chunk_size * n_chunk_per_traj) == 0, f"Trajectory length {gt_traj.shape[0]} is not divisible by chunk_size {chunk_size} and n_chunk_per_traj {n_chunk_per_traj}"
 
         # reconstruct
         gt_traj = gt_traj.unsqueeze(0).cuda()  # (1, T, D)
         traj_length = chunk_size * n_chunk_per_traj
         with torch.no_grad():
-            all_recon_traj = []
-            for sec_start in range(0, gt_traj.shape[1] - traj_length + chunk_size, chunk_size):
-                traj_chunk = gt_traj[:, sec_start:sec_start+traj_length]
-                code = model.encode(traj_chunk)
+            all_codes = []
+            for sec_start in range(0, gt_traj.shape[1], traj_length):
+                traj_chunk = gt_traj[:, sec_start:sec_start + traj_length]
+                code = model.encode(traj_chunk)  # (1, N_q, n_chunk_per_traj)
                 recon_traj = model.decode(code)
-                if sec_start == gt_traj.shape[1] - traj_length:
-                    all_recon_traj.append(recon_traj)
-                else:
-                    all_recon_traj.append(recon_traj[:, :chunk_size])
-            recon_traj = torch.cat(all_recon_traj, dim=1)
+
+                all_codes.append(code)
+
+            code = torch.cat(all_codes, dim=-1)  # (1, N_q, T')
+            assert code.shape[2] == gt_traj.shape[1] // chunk_size, f"Code shape {code.shape} does not match gt_traj shape {gt_traj.shape}, {chunk_size}"
+
+            # decode the code
+            all_recon_trajectories = []
+            for sec_idx in range(len(code) // n_chunk_per_traj):
+                code_chunk = code[:, :, sec_idx * n_chunk_per_traj:(sec_idx + 1) * n_chunk_per_traj]
+                recon_traj = model.decode(code_chunk)  # (1, T, D)
+
+                all_recon_trajectories.append(recon_traj)
+            recon_traj = torch.cat(all_recon_trajectories, dim=1)
             print(f"GT shape: {gt_traj.shape}, recon shape: {recon_traj.shape}")
 
         if model.motion_mode == "proprior":
