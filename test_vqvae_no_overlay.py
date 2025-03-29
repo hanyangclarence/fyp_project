@@ -34,9 +34,9 @@ def run_single_trajectory(
     reward = 0.0
 
     trajectory[:, -1] = trajectory[:, -1].round()  # the last dim is the gripper state
-    for action in tqdm(trajectory, desc="Executing and visualizing trajectory"):
+    for i, action in enumerate(tqdm(trajectory, desc="Executing and visualizing trajectory")):
         _, reward, _, _ = move(action, collision_checking=False)
-        if recorder is not None:
+        if recorder is not None and i % 8 == 0:
             recorder.save_blank_frame()
         if reward > 0.0:
             break
