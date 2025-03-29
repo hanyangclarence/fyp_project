@@ -125,7 +125,7 @@ if __name__ == '__main__':
 
             # decode the code
             all_recon_trajectories = []
-            for sec_idx in range(len(code) // n_chunk_per_traj):
+            for sec_idx in range(code.shape[2] // n_chunk_per_traj):
                 code_chunk = code[:, :, sec_idx * n_chunk_per_traj:(sec_idx + 1) * n_chunk_per_traj]
                 recon_traj = model.decode(code_chunk)  # (1, T, D)
 
