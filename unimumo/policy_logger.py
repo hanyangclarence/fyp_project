@@ -161,10 +161,19 @@ class Logger(Callback):
             task.set_variation(var)
 
             gt_obs_list = self.get_ground_truth_rollout(task, task_str, var, eps, pl_module, traj_code)
-            os.makedirs(pjoin(save_dir, f"{split}_{global_step}_{b}_gt"), exist_ok=True)
+            os.makedirs(pjoin(save_dir, f"{split}_{global_step}_{b}_gt_rollout"), exist_ok=True)
             for t, obs in enumerate(gt_obs_list):
                 rgb: np.ndarray = obs[-1]
-                plt.imsave(pjoin(save_dir, f"{split}_{global_step}_{b}_gt", f"{t}.png"), rgb)
+                plt.imsave(pjoin(save_dir, f"{split}_{global_step}_{b}_gt_rollout", f"{t}.png"), rgb)
+
+        # also, save the ground truth observation
+        for b in range(self.save_num):
+            rgb = batch["rgb"][b, :, -1]  # (T-1, 3, H, W)
+            os.makedirs(pjoin(save_dir, f"{split}_{global_step}_{b}_gt_obs"), exist_ok=True)
+            for t in range(rgb.shape[0]):
+                observation: np.ndarray = rgb[t] # (3, H, W)
+                observation = observation.transpose(1, 2, 0)  # (H, W, 3)
+                plt.imsave(pjoin(save_dir, f"{split}_{global_step}_{b}_gt_obs", f"{t}.png"), observation)
 
         self.env.env.shutdown()
         self.env = None
