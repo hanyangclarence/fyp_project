@@ -171,8 +171,8 @@ class Logger(Callback):
             rgb = batch["rgb"][b, :, -1]  # (T-1, 3, H, W)
             os.makedirs(pjoin(save_dir, f"{split}_{global_step}_{b}_gt_obs"), exist_ok=True)
             for t in range(rgb.shape[0]):
-                observation: np.ndarray = rgb[t] # (3, H, W)
-                observation = observation.transpose(0, 1).transpose(1, 2)  # (H, W, 3)
+                observation = rgb[t] # (3, H, W)
+                observation = observation.permute(1, 2, 0).cpu().numpy()  # (H, W, 3)
                 plt.imsave(pjoin(save_dir, f"{split}_{global_step}_{b}_gt_obs", f"{t}.png"), observation)
 
         self.env.env.shutdown()
