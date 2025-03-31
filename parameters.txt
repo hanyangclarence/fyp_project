@@ -114,6 +114,10 @@ later change to 8 actions, or 2 tokens, to represent each keypoint
 from 21
 use selected tasks and variations
 
+# train_motion_vqvae_23.yaml
+from 22
+use new vqvae_v2. Let the gripper pose to be half the start gripper, half the end gripper
+
 
 policy v1
 2025-03-19T15-24-35_train_policy: train on v19 code data, totally not working
