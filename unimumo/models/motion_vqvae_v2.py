@@ -81,6 +81,12 @@ class MotionVQVAE(pl.LightningModule):
 
         trajectory = self.normalize(trajectory)
 
+        t = trajectory.shape[1]
+        gripper_start = trajectory[:, 0:1, 7:8]  # (B, 1, 1)
+        gripper_end = trajectory[:, -1:, 7:8]  # (B, 1, 1)
+        trajectory[:, :t//2, 7:8] = gripper_start
+        trajectory[:, t//2:, 7:8] = gripper_end
+
         traj_recon, commitment_loss = self.forward(trajectory, description)
         loss, loss_dict = self.loss(trajectory[:, :, :8], traj_recon, commitment_loss, split="train")  # only reconstruct the motion part
 
@@ -171,12 +177,6 @@ class MotionVQVAE(pl.LightningModule):
 
     def embed_motion(self, trajectory: torch.Tensor):
         # trajectory: (B, T, 8)
-        t = trajectory.shape[1]
-        gripper_start = trajectory[:, 0:1, 7:8]  # (B, 1, 1)
-        gripper_end = trajectory[:, -1:, 7:8]  # (B, 1, 1)
-        trajectory[:, :t//2, 7:8] = gripper_start
-        trajectory[:, t//2:, 7:8] = gripper_end
-
         trajectory = rearrange(trajectory, 'b t d -> b d t')
         motion_emb = self.motion_encoder(trajectory)  # [B, 128, T']
 
@@ -186,9 +186,6 @@ class MotionVQVAE(pl.LightningModule):
         # motion_emb: [B, 128, T']
         motion_recon = self.motion_decoder(motion_emb)
         motion_recon = rearrange(motion_recon, 'b d t -> b t d')  # [B, T, 8]
-
-        gripper_start = motion_recon[:, 0:1, 7:8]
-        motion_recon[:, :-1, 7:8] = gripper_start
 
         return motion_recon
 
@@ -205,6 +202,12 @@ class MotionVQVAE(pl.LightningModule):
         N, T, C = trajectory.shape
         assert C == self.input_dim, f"Expected {self.input_dim} channels, got {C}"
 
+        t = trajectory.shape[1]
+        gripper_start = trajectory[:, 0:1, 7:8]  # (B, 1, 1)
+        gripper_end = trajectory[:, -1:, 7:8]  # (B, 1, 1)
+        trajectory[:, :t//2, 7:8] = gripper_start
+        trajectory[:, t//2:, 7:8] = gripper_end
+
         trajectory = self.normalize(trajectory)
 
         motion_emb = self.embed_motion(trajectory)
@@ -219,6 +222,9 @@ class MotionVQVAE(pl.LightningModule):
         motion_recon = self.decode_motion_embed(motion_emb)
 
         motion_recon = self.denormalize(motion_recon)
+
+        gripper_start = motion_recon[:, 0:1, 7:8]
+        motion_recon[:, :-1, 7:8] = gripper_start
 
         return motion_recon
 
