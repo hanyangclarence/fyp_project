@@ -70,8 +70,8 @@ lightning:
         save_rollout: True
         visualize_data: False
         save_num: 1
-        train_save_freq: 13000
-        val_save_freq: 13000
+        train_save_freq: 10000
+        val_save_freq: 10000
         vqvae_config: "configs/train_motion_vqvae_23.yaml"
         vqvae_ckpt_path: "training_logs/2025-03-31T21-22-31_train_motion_vqvae_23/checkpoints/epoch=002911.ckpt"
         rlb_config:
