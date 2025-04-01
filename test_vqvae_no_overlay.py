@@ -52,6 +52,7 @@ if __name__ == '__main__':
     parser.add_argument("--dataset_path", type=str, default="/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw")
     parser.add_argument("--vis_freq", type=int, default=50)
     parser.add_argument("--save_dir", type=str, default="test_logs")
+    parser.add_argument("--split", type=str, default="test")
     parser.add_argument("--cal_reward", action="store_true")
     args = parser.parse_args()
 
@@ -70,7 +71,7 @@ if __name__ == '__main__':
     chunk_size = config["data"]["params"]["validation"]["params"]["chunk_size"]
     n_chunk_per_traj = config["data"]["params"]["validation"]["params"]["n_chunk_per_traj"]
     dataset = MotionVQVAEDataset(
-        "test",
+        args.split,
         args.dataset_path,
         preload_data=False,
         load_observations=config["data"]["params"]["validation"]["params"]["load_observations"],
