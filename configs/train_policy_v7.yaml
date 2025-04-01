@@ -43,8 +43,8 @@ data:
       target: unimumo.data.policy_dataset_v3.PolicyDataset
       params:
         split: "train"
-        motion_code_dir: "data/motion_code_v22"
-        visual_data_dir: "data/observations_v22"
+        motion_code_dir: "data/motion_code_v23"
+        visual_data_dir: "data/observations_v23"
         instruction_path: "data/instructions.pkl"
         traj_length: 2
         n_chunk_per_traj: 2
@@ -54,8 +54,8 @@ data:
       target: unimumo.data.policy_dataset_v3.PolicyDataset
       params:
         split: "val"
-        motion_code_dir: "data/motion_code_v22"
-        visual_data_dir: "data/observations_v22"
+        motion_code_dir: "data/motion_code_v23"
+        visual_data_dir: "data/observations_v23"
         instruction_path: "data/instructions.pkl"
         traj_length: 2
         n_chunk_per_traj: 2
@@ -72,8 +72,8 @@ lightning:
         save_num: 1
         train_save_freq: 13000
         val_save_freq: 13000
-        vqvae_config: "configs/train_motion_vqvae_22.yaml"
-        vqvae_ckpt_path: "training_logs/2025-03-27T17-47-19_train_motion_vqvae_22/checkpoints/epoch=008006.ckpt"
+        vqvae_config: "configs/train_motion_vqvae_23.yaml"
+        vqvae_ckpt_path: "training_logs/2025-03-31T21-22-31_train_motion_vqvae_23/checkpoints/epoch=002911.ckpt"
         rlb_config:
           data_path: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
           image_size: "256,256"

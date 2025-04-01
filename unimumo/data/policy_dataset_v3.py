@@ -17,8 +17,11 @@ from scipy.spatial.transform import Rotation as R
 
 Instructions = Dict[str, Dict[int, torch.Tensor]]
 
+# TASK_LIST = [
+#     'close_jar', 'light_bulb_in', 'meat_off_grill', 'open_drawer', 'push_buttons', 'put_groceries_in_cupboard',  'put_item_in_drawer', 'put_money_in_safe', 'slide_block_to_color_target'
+# ]
 TASK_LIST = [
-    'close_jar' #, 'light_bulb_in', 'meat_off_grill', 'open_drawer', 'push_buttons', 'put_groceries_in_cupboard',  'put_item_in_drawer', 'put_money_in_safe', 'slide_block_to_color_target'
+    'meat_off_grill', 'open_drawer', 'put_item_in_drawer'
 ]
 VARIATIONS = 3
 
