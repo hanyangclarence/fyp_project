@@ -202,6 +202,7 @@ class MotionVQVAE(pl.LightningModule):
         N, T, C = trajectory.shape
         assert C == self.input_dim, f"Expected {self.input_dim} channels, got {C}"
 
+        trajectory = trajectory.clone()
         t = trajectory.shape[1]
         gripper_start = trajectory[:, 0:1, 7:8]  # (B, 1, 1)
         gripper_end = trajectory[:, -1:, 7:8]  # (B, 1, 1)
