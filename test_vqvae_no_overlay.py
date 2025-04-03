@@ -227,6 +227,10 @@ if __name__ == '__main__':
         # print(f"Average reward={np.mean(all_rewards): .4f}")
         for task_str in all_rewards:
             print(f"Average reward for task {task_str}={np.mean(all_rewards[task_str]): .4f}")
+        total_reward = []
+        for task_str in all_rewards:
+            total_reward += all_rewards[task_str]
+        print(f"Total average reward={np.mean(total_reward): .4f}")
     rlbench_env.env.shutdown()
     # write losses to file
     with open(os.path.join(save_dir, "losses.txt"), "w") as f:
@@ -235,6 +239,10 @@ if __name__ == '__main__':
             # content += f"Average reward={np.mean(all_rewards): .4f}\n"
             for task_str in all_rewards:
                 content += f"Average reward for task {task_str}={np.mean(all_rewards[task_str]): .4f}\n"
+            total_reward = []
+            for task_str in all_rewards:
+                total_reward += all_rewards[task_str]
+            content += f"Total average reward={np.mean(total_reward): .4f}\n"
         f.write(content)
 
 
