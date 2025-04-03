@@ -35,7 +35,8 @@ class MotionVQVAEDataset(Dataset):
             n_chunk_per_traj: int = 2,  # number of chunks in a trajectory
             load_sparce: bool = False,  # Whether to load sparse trajectory
             load_full_traj: bool = False,  # Whether to load full trajectory
-            load_traj_index: bool = False
+            load_traj_index: bool = False,
+            load_val: bool = False,  # Whether to load validation data
     ):
         # load RLBench environment
         self.env = RLBenchEnv(
@@ -77,6 +78,44 @@ class MotionVQVAEDataset(Dataset):
                     self.all_demos_ids.append((task, var, eps))
 
         self.data = []
+
+        if load_val:
+            assert preload_data == True
+            # also load validation data
+            val_dataset = MotionVQVAEDataset(
+                "val",
+                data_dir,
+                preload_data=True,
+                cameras=cameras,
+                image_size=image_size,
+                load_observations=load_observations,
+                load_proprioception=load_proprioception,
+                use_chunk=use_chunk,
+                chunk_size=chunk_size,
+                n_chunk_per_traj=n_chunk_per_traj,
+                load_sparce=load_sparce,
+                load_full_traj=load_full_traj,
+                load_traj_index=load_traj_index
+            )
+            self.data.extend(val_dataset.data)
+            # also load test data
+            test_dataset = MotionVQVAEDataset(
+                "test",
+                data_dir,
+                preload_data=True,
+                cameras=cameras,
+                image_size=image_size,
+                load_observations=load_observations,
+                load_proprioception=load_proprioception,
+                use_chunk=use_chunk,
+                chunk_size=chunk_size,
+                n_chunk_per_traj=n_chunk_per_traj,
+                load_sparce=load_sparce,
+                load_full_traj=load_full_traj,
+                load_traj_index=load_traj_index
+            )
+            self.data.extend(test_dataset.data)
+
         self.preload_data = preload_data
         self.load_observations = load_observations
         if preload_data:
