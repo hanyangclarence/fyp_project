@@ -98,7 +98,7 @@ if __name__ == '__main__':
     # run inference
     pose_recon_losses = []
     gripper_classification_losses = []
-    all_rewards = []
+    all_rewards = {}
     for i in range(len(dataset)):
         batch = dataset[i]
         gt_traj = batch["trajectory"]  # (T, D)
@@ -214,20 +214,26 @@ if __name__ == '__main__':
                 print(f"Error running recon trajectory: {e}")
                 tr._snaps = {cam_name: [] for cam_name in tr._cams_motion.keys()}
 
-            print(f"Reward: {reward}")
-            all_rewards.append(reward)
+            print(f"Reward: {reward}, task: {task_str}, var: {variation}, eps: {episode}")
+            if task_str not in all_rewards:
+                all_rewards[task_str] = []
+            all_rewards[task_str].append(reward)
         else:
             print("")
 
     print(f"Average pose_recon_loss={np.mean(pose_recon_losses): .4f}, average gripper_classification_loss={np.mean(gripper_classification_losses): .4f}")
     if len(all_rewards) > 0:
-        print(f"Average reward={np.mean(all_rewards): .4f}")
+        # print(f"Average reward={np.mean(all_rewards): .4f}")
+        for task_str in all_rewards:
+            print(f"Average reward for task {task_str}={np.mean(all_rewards[task_str]): .4f}")
     rlbench_env.env.shutdown()
     # write losses to file
     with open(os.path.join(save_dir, "losses.txt"), "w") as f:
         content = f"Average pose_recon_loss={np.mean(pose_recon_losses): .4f}\nAverage gripper_classification_loss={np.mean(gripper_classification_losses): .4f}\n"
         if len(all_rewards) > 0:
-            content += f"Average reward={np.mean(all_rewards): .4f}\n"
+            # content += f"Average reward={np.mean(all_rewards): .4f}\n"
+            for task_str in all_rewards:
+                content += f"Average reward for task {task_str}={np.mean(all_rewards[task_str]): .4f}\n"
         f.write(content)
 
 
