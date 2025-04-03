@@ -212,7 +212,8 @@ if __name__ == '__main__':
                     ))
             except Exception as e:
                 print(f"Error running recon trajectory: {e}")
-                tr._snaps = {cam_name: [] for cam_name in tr._cams_motion.keys()}
+                if tr is not None:
+                    tr._snaps = {cam_name: [] for cam_name in tr._cams_motion.keys()}
 
             print(f"Reward: {reward}, task: {task_str}, var: {variation}, eps: {episode}")
             if task_str not in all_rewards:
