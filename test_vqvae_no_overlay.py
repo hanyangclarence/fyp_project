@@ -85,7 +85,7 @@ if __name__ == '__main__':
 
     # init simulation env
     rlbench_env = RLBenchEnv(
-        data_path=os.path.join(args.dataset_path, "test"),
+        data_path=os.path.join(args.dataset_path, args.split),
         image_size=[256, 256],
         apply_rgb=False,
         apply_pc=False,
