@@ -144,7 +144,7 @@ if __name__ == '__main__':
         gripper_classification_loss = torch.nn.functional.binary_cross_entropy_with_logits(gt_traj[:, 7:8], recon_traj[:, 7:8], reduction="mean")
         pose_recon_losses.append(pose_recon_loss.item())
         gripper_classification_losses.append(gripper_classification_loss.item())
-        print(f"Eval {i}/{len(dataset)}: pose_recon_loss={pose_recon_loss: .4f}, gripper_classification_loss={gripper_classification_loss: .4f} ", end="")
+        print(f"Eval {i}/{len(dataset)}: pose_recon_loss={pose_recon_loss: .4f}, gripper_classification_loss={gripper_classification_loss: .4f} ")
 
         # get reward
         if args.cal_reward or (i + 1) % args.vis_freq == 0:
