@@ -69,6 +69,11 @@ def execute_function(move: Mover, code, start_idx, end_idx):
         print(f"Error executing trajectory: {e}")
         return None
 
+    if reward > 0.0:
+        print("Execution Success!")
+        rgb, pcd = obs_to_rgb_pcd(obs)
+        return rgb, pcd, reward
+
     return obs_to_rgb_pcd(obs)
 
 

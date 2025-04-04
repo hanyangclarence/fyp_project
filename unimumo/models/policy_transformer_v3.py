@@ -215,13 +215,20 @@ class PolicyTransformer(pl.LightningModule):
 
                     continue
 
-                # update the trajectory
-                new_rgb, new_pcd = ret_value
-                rgb = torch.cat([rgb, new_rgb], dim=1)  # (1, T+1, ncam, 3, H, W)
-                pcd = torch.cat([pcd, new_pcd], dim=1)
+                if len(ret_value) == 2:
+                    # update the trajectory
+                    new_rgb, new_pcd = ret_value
+                    rgb = torch.cat([rgb, new_rgb], dim=1)  # (1, T+1, ncam, 3, H, W)
+                    pcd = torch.cat([pcd, new_pcd], dim=1)
 
-                if torch.all(sample == self.end_idx):
-                    print("End token reached!")
+                    if torch.all(sample == self.end_idx):
+                        print("End token reached!")
+                        break
+                else:
+                    assert len(ret_value) == 3, f"Invalid return value: {ret_value}"
+                    new_rgb, new_pcd, reward = ret_value
+                    rgb = torch.cat([rgb, new_rgb], dim=1)
+                    print(f"Success execution! Reward: {reward}")
                     break
 
         rgb = einops.rearrange(rgb[0], "t ncam c h w -> t ncam h w c").cpu().numpy()
