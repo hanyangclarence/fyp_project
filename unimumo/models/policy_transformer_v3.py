@@ -199,6 +199,10 @@ class PolicyTransformer(pl.LightningModule):
             probs = F.softmax(logits / temperature, dim=-1)  # (1, C)
             sample = torch.multinomial(probs[0], 1).unsqueeze(0)  # (1, 1)
 
+            if torch.all(sample == self.end_idx):
+                print("End token reached!")
+                break
+
             out = torch.cat([out, sample], dim=1)  # (1, 4 * T + 1)
 
             if len(out[0, 1:]) % self.n_chunk_per_traj == 0:
@@ -221,9 +225,6 @@ class PolicyTransformer(pl.LightningModule):
                     rgb = torch.cat([rgb, new_rgb], dim=1)  # (1, T+1, ncam, 3, H, W)
                     pcd = torch.cat([pcd, new_pcd], dim=1)
 
-                    if torch.all(sample == self.end_idx):
-                        print("End token reached!")
-                        break
                 else:
                     assert len(ret_value) == 3, f"Invalid return value: {ret_value}"
                     new_rgb, new_pcd, reward = ret_value
