@@ -137,6 +137,9 @@ def main(config):
 
     results = {}
     for idx, (task_str, var, eps) in enumerate(dataset.all_demos_ids):
+        if config.max_eps_per_task > 0 and len(results[task_str]) >= config.max_eps_per_task:
+            continue
+
         instruction = dataset.instructions[task_str][var][0].unsqueeze(0)
         instruction = torch.tensor(instruction).cuda()  # (1, 53, 512)
 
@@ -179,6 +182,7 @@ if __name__ == "__main__":
     parser.add_argument("--split", type=str, default="train")
     parser.add_argument("--save_dir", type=str, default="test_logs")
     parser.add_argument("--save_freq", type=int, default=1)
+    parser.add_argument("--max_eps_per_task", type=int, default=-1)
 
     conf = parser.parse_args()
     main(conf)
