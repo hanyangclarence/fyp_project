@@ -137,7 +137,7 @@ def main(config):
 
     results = {}
     for idx, (task_str, var, eps) in enumerate(dataset.all_demos_ids):
-        if config.max_eps_per_task > 0 and len(results[task_str]) >= config.max_eps_per_task:
+        if config.max_eps_per_task > 0 and task_str in results and len(results[task_str]) >= config.max_eps_per_task:
             continue
 
         instruction = dataset.instructions[task_str][var][0].unsqueeze(0)
