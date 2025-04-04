@@ -222,7 +222,7 @@ if __name__ == '__main__':
         else:
             print("")
 
-    print(f"Average pose_recon_loss={np.mean(pose_recon_losses): .4f}, average gripper_classification_loss={np.mean(gripper_classification_losses): .4f}")
+    print(f"Average pose_recon_loss={np.mean(pose_recon_losses): .8f}, average gripper_classification_loss={np.mean(gripper_classification_losses): .8f}")
     if len(all_rewards) > 0:
         # print(f"Average reward={np.mean(all_rewards): .4f}")
         for task_str in all_rewards:
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     rlbench_env.env.shutdown()
     # write losses to file
     with open(os.path.join(save_dir, "losses.txt"), "w") as f:
-        content = f"Average pose_recon_loss={np.mean(pose_recon_losses): .4f}\nAverage gripper_classification_loss={np.mean(gripper_classification_losses): .4f}\n"
+        content = f"Average pose_recon_loss={np.mean(pose_recon_losses): .8f}\nAverage gripper_classification_loss={np.mean(gripper_classification_losses): .8f}\n"
         if len(all_rewards) > 0:
             # content += f"Average reward={np.mean(all_rewards): .4f}\n"
             for task_str in all_rewards:
