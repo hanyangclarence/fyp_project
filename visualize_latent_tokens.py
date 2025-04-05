@@ -18,6 +18,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_dir", type=str, default="visualization_logs")
     parser.add_argument("--split", type=str, default="train")
     parser.add_argument("--dataset_path", type=str, default="/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw")
+    parser.add_argument("--max_eps_per_task", type=int, default=1000)
     args = parser.parse_args()
 
     # load config
@@ -49,12 +50,18 @@ if __name__ == "__main__":
     )
 
     stats_results = {}
+    eps_count = {}
     for i in range(len(dataset)):
         batch = dataset[i]
         gt_traj = batch["trajectory"]  # (T, D)
         task_str = batch["task_str"]
         if task_str not in stats_results:
             stats_results[task_str] = np.array([], dtype=np.int64)
+        if task_str not in eps_count:
+            eps_count[task_str] = 0
+        if eps_count[task_str] >= args.max_eps_per_task:
+            continue
+        eps_count[task_str] += 1
 
         # reconstruct
         gt_traj = gt_traj.unsqueeze(0).cuda()  # (1, T, D)
