@@ -40,13 +40,27 @@ if __name__ == "__main__":
     sim_mat = np.zeros((N, N), dtype=np.float32)
     for i in range(N):
         for j in range(i, N):
-            sim = np.dot(codebook[i], codebook[j]) / (np.linalg.norm(codebook[i]) * np.linalg.norm(codebook[j]))
+            if np.linalg.norm(codebook[i]) < 1e-8 or np.linalg.norm(codebook[j]) < 1e-8:
+                sim = 0.0
+            else:
+                sim = np.dot(codebook[i], codebook[j]) / (np.linalg.norm(codebook[i]) * np.linalg.norm(codebook[j]))
             sim_mat[i, j] = sim
             sim_mat[j, i] = sim
     # save sim_mat as image
+    plt.figure(figsize=(50, 50))
     plt.imshow(sim_mat, cmap='hot', interpolation='nearest')
-    plt.colorbar()
-    plt.title("Codebook Similarity Matrix")
+    
+    # add a colorbar with large text
+    cbar = plt.colorbar()
+    cbar.ax.tick_params(labelsize=50)
+    cbar.ax.set_ylabel('Similarity', fontsize=50)
+    
+    plt.title("Codebook Similarity Matrix", fontsize=60)
+    plt.xticks(fontsize=50)
+    plt.yticks(fontsize=50)
+    plt.xlabel("Codebook Index", fontsize=60)
+    plt.ylabel("Codebook Index", fontsize=60)
+    plt.tight_layout()
     plt.savefig(os.path.join(save_dir, "codebook_similarity.png"))
     plt.close()
     print("Codebook similarity matrix saved to", os.path.join(save_dir, "codebook_similarity.png"))
