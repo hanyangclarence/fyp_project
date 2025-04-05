@@ -104,5 +104,20 @@ if __name__ == "__main__":
         plt.title(f"Token Frequencies for {task_str}")
         plt.axis('off')
         plt.savefig(os.path.join(save_dir, f"{task_str}.png"), bbox_inches='tight')
+    
+    all_token_ids = np.concatenate(list(stats_results.values()), axis=0)
+    counts = Counter(all_token_ids)
+    frequencies = np.zeros(codebook_size)
+    for token_id, count in counts.items():
+        frequencies[token_id] = count
+        
+    heatmap = frequencies.reshape(16, -1)
+    plt.figure(figsize=(12, 8))
+    plt.imshow(heatmap, cmap='viridis')
+    plt.colorbar(label="Frequency")
+    plt.title(f"Token Frequencies for all tasks")
+    plt.axis('off')
+    plt.savefig(os.path.join(save_dir, f"all_tasks.png"), bbox_inches='tight')
+    plt.close()
 
 
