@@ -16,6 +16,8 @@ if __name__ == "__main__":
     parser.add_argument("--config", type=str)
     parser.add_argument("--ckpt", type=str)
     parser.add_argument("--save_dir", type=str, default="visualization_logs")
+    parser.add_argument("--split", type=str, default="train")
+    parser.add_argument("--dataset_path", type=str, default="/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw")
     args = parser.parse_args()
 
     # load config
