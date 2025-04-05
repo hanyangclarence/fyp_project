@@ -104,12 +104,13 @@ def test_policy(task, task_str, var, eps, instruction: torch.Tensor):
 
 
 def main(config):
-    global vqvae, policy_model, env
+    global vqvae, policy_model, env, CODEBOOK_SIZE
 
     # Load the VQVAE and policy model
     config_vq = OmegaConf.load(config.cfg_vq)
     vqvae = load_model_from_config(config_vq, config.pth_vq, verbose=True)
     vqvae.eval().cuda()
+    CODEBOOK_SIZE = config_vq["model"]["params"]["quantizer_config"]["bins"]
 
     config_policy = OmegaConf.load(config.cfg_policy)
     policy_model = load_model_from_config(config_policy, config.pth_policy, verbose=True)
