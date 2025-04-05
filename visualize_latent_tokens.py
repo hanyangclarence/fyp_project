@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
                 all_recon_trajectories.append(recon_traj)
             recon_traj = torch.cat(all_recon_trajectories, dim=1)
-            print(f"GT shape: {gt_traj.shape}, recon shape: {recon_traj.shape}")
+            print(f"{i}/{len(dataset)}  GT shape: {gt_traj.shape}, recon shape: {recon_traj.shape}")
 
         code = code.flatten().cpu().numpy().astype(np.int64)
         stats_results[task_str] = np.concatenate([stats_results[task_str], code], axis=0)
