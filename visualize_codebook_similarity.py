@@ -33,7 +33,7 @@ if __name__ == "__main__":
     model = load_model_from_config(config, args.ckpt, verbose=True)
     model.cuda()
     
-    codebook = model.quantizer.vq.layers[0]._codebook  # (N, D)
+    codebook = model.quantizer.vq.layers[0]._codebook.embed  # (N, D)
     codebook = codebook.cpu().numpy()
     
     N, D = codebook.shape
@@ -49,3 +49,4 @@ if __name__ == "__main__":
     plt.title("Codebook Similarity Matrix")
     plt.savefig(os.path.join(save_dir, "codebook_similarity.png"))
     plt.close()
+    print("Codebook similarity matrix saved to", os.path.join(save_dir, "codebook_similarity.png"))
