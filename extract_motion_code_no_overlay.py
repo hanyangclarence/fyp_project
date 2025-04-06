@@ -14,8 +14,8 @@ from unimumo.rlbench.utils_with_rlbench import RLBenchEnv
 # this is for VQVAE version 21
 # there is no overlay in encoding and decoding
 
-START_TOKEN = 512
-END_TOKEN = 513
+START_TOKEN = 256
+END_TOKEN = 257
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     # set save dir
     os.makedirs(args.save_dir, exist_ok=True)
-    save_dir = os.path.join(args.save_dir, "motion_code_v26")
+    save_dir = os.path.join(args.save_dir, "motion_code_v27")
     os.makedirs(save_dir, exist_ok=True)
 
     # load model
