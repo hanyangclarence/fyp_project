@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     # set save dir
     os.makedirs(args.save_dir, exist_ok=True)
-    save_dir = os.path.join(args.save_dir, "motion_code_v24")
+    save_dir = os.path.join(args.save_dir, "motion_code_v26")
     os.makedirs(save_dir, exist_ok=True)
 
     # load model
