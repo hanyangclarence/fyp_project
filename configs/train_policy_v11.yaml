@@ -1,0 +1,88 @@
+model:
+  target: unimumo.models.policy_transformer_v3.PolicyTransformer
+  params:
+    monitor: "val_loss"
+    num_tokens: 131
+    input_traj_length: 2
+    max_traj_length: 15
+    # the following two values align with the motion vqvae
+    chunk_size: 4
+    n_chunk_per_traj: 4
+    start_idx: 128
+    end_idx: 129
+    pad_idx: 130
+    encoder_config:
+      image_size: [3, 256, 256]
+      embedding_dim: 160
+      n_cameras: 4
+      rgb_encoder: "resnet18"
+    transformer_config:
+      dim: 384
+      depth: 12
+      heads: 8
+      cross_attend: True
+    optimizer_config:
+      optimizer:
+        target: AdamW
+        params:
+          lr: 5e-5
+          betas: [ 0.9, 0.99 ]
+          weight_decay: 0.0
+      lr_scheduler:
+        target: CosineAnnealingLR
+        params:
+          T_max: 20000  # not sure about this
+          eta_min: 1e-6
+data:
+  target: train.DataModuleFromConfig
+  params:
+    batch_size: 8
+    wrap: True
+    num_workers: 4
+    train:
+      target: unimumo.data.policy_dataset_v2.PolicyDataset
+      params:
+        split: "train"
+        motion_code_dir: "data/motion_code_v28"
+        visual_data_dir: "data/observations_v28"
+        instruction_path: "data/instructions.pkl"
+        traj_length: 2
+        n_chunk_per_traj: 4
+        start_idx: 128
+        end_idx: 129
+    validation:
+      target: unimumo.data.policy_dataset_v2.PolicyDataset
+      params:
+        split: "val"
+        motion_code_dir: "data/motion_code_v28"
+        visual_data_dir: "data/observations_v28"
+        instruction_path: "data/instructions.pkl"
+        traj_length: 2
+        n_chunk_per_traj: 4
+        start_idx: 128
+        end_idx: 129
+
+lightning:
+  callbacks:
+    video_logger:
+      target: unimumo.policy_logger.Logger
+      params:
+        save_rollout: True
+        visualize_data: False
+        save_num: 1
+        train_save_freq: 10000
+        val_save_freq: 10000
+        vqvae_config: "configs/train_motion_vqvae_28.yaml"
+        vqvae_ckpt_path: "training_logs/2025-04-06T08-39-26_train_motion_vqvae_28/checkpoints/epoch=005736.ckpt"
+        rlb_config:
+          data_path: "/research/d2/fyp24/hyang2/fyp/code/3d_diffuser_actor/data/peract/raw"
+          image_size: "256,256"
+          apply_rgb: True
+          apply_pc: True
+          apply_cameras: ["left_shoulder", "right_shoulder", "wrist", "front"]
+
+  trainer:
+    benchmark: True
+    devices: 1
+    num_nodes: 1
+    strategy: ddp
