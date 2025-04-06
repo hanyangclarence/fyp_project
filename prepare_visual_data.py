@@ -17,8 +17,8 @@ from unimumo.rlbench.utils_with_rlbench import RLBenchEnv, keypoint_discovery, i
 MIN_DELTA_TRANS = 0.05
 MIN_DELTA_ROT = 0.4
 
-motion_code_dir_name = "motion_code_v26"
-save_filename = "observations_v26"
+motion_code_dir_name = "motion_code_v27"
+save_filename = "observations_v27"
 
 class MotionVQVAEDataset(Dataset):
     def __init__(
