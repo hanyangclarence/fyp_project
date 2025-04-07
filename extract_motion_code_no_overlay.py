@@ -27,6 +27,7 @@ if __name__ == '__main__':
 
     # load config
     config = OmegaConf.load(args.config)
+    assert START_TOKEN == config["model"]["params"]["quantizer_config"]["bins"]
 
     # set save dir
     os.makedirs(args.save_dir, exist_ok=True)
