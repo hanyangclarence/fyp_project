@@ -8,6 +8,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from torchvision import transforms
 import argparse
+import random
 
 from pyrep.objects.dummy import Dummy
 from pyrep.objects.vision_sensor import VisionSensor
@@ -137,7 +138,8 @@ def main(config):
     # Iterate through the dataset
 
     results = {}
-    for idx, (task_str, var, eps) in enumerate(dataset.all_demos_ids[::-1]):
+    random.shuffle(dataset.all_demos_ids)
+    for idx, (task_str, var, eps) in enumerate(dataset.all_demos_ids):
         if config.max_eps_per_task > 0 and task_str in results and len(results[task_str]) >= config.max_eps_per_task:
             continue
 
