@@ -137,7 +137,7 @@ def main(config):
     # Iterate through the dataset
 
     results = {}
-    for idx, (task_str, var, eps) in enumerate(dataset.all_demos_ids):
+    for idx, (task_str, var, eps) in enumerate(dataset.all_demos_ids[::-1]):
         if config.max_eps_per_task > 0 and task_str in results and len(results[task_str]) >= config.max_eps_per_task:
             continue
 
