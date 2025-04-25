@@ -150,14 +150,14 @@ def main(config):
         
         # set up camera
         cam_placeholder = Dummy('cam_cinematic_placeholder')
-        cam_resolution = [240, 240]
+        cam_resolution = [480, 480]
         cam = VisionSensor.create(cam_resolution)
         cam.set_pose(cam_placeholder.get_pose())
         cam.set_parent(cam_placeholder)
         
         cam_motion = StaticCameraMotion(cam)
         cams_motion = {"global": cam_motion}
-        tr = TaskRecorder(cams_motion, fps=20)
+        tr = TaskRecorder(cams_motion, fps=40)
         
         task._scene.register_step_callback(tr.take_snap)
 

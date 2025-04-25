@@ -4,7 +4,7 @@ model:
     monitor: "val_loss"
     num_tokens: 515
     input_traj_length: 2
-    max_traj_length: 15
+    max_traj_length: 8
     # the following two values align with the motion vqvae
     chunk_size: 4
     n_chunk_per_traj: 3
