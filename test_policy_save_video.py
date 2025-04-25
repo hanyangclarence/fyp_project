@@ -23,7 +23,6 @@ CODEBOOK_SIZE = 512
 
 vqvae = policy_model = None
 env: RLBenchEnv = None
-video_frames = []
 
 reward = 0.0
 
@@ -44,7 +43,7 @@ def obs_to_rgb_pcd(obs: Observation):
 
 
 def execute_function(move: Mover, code, start_idx, end_idx):
-    global reward, video_frames
+    global reward
 
     # code: (1, 4)
     assert len(code.shape) == 2 and code.shape[0] == 1, f"Invalid code shape: {code.shape}"
@@ -66,10 +65,6 @@ def execute_function(move: Mover, code, start_idx, end_idx):
         obs = None
         for action in traj_recon:
             obs, reward, _, _ = move(action, collision_checking=False)
-            frame = obs_to_rgb_pcd(obs)[0]
-            frame = frame.squeeze().cpu()[-1]  # (3, H, W)
-            frame = frame.permute(1, 2, 0).numpy()  # (H, W, 3)
-            video_frames.append(frame)
     except Exception as e:
         print(f"Error executing trajectory: {e}")
         return None
@@ -83,8 +78,7 @@ def execute_function(move: Mover, code, start_idx, end_idx):
 
 
 def test_policy(task, task_str, var, eps, instruction: torch.Tensor):
-    global policy_model, reward, video_frames
-    video_frames = []
+    global policy_model, reward
     assert instruction.shape == (1, 53, 512), f"Invalid instruction shape: {instruction.shape}"
     try:
         gt_demo = env.get_demo(task_str, var, episode_index=eps, image_paths=True)[0]
@@ -153,8 +147,21 @@ def main(config):
         # setup the simulation environment
         task = env.env.get_task(task_file_to_task_class(task_str))
         task.set_variation(var)
+        
+        # set up camera
+        cam_placeholder = Dummy('cam_cinematic_placeholder')
+        cam_resolution = [240, 240]
+        cam = VisionSensor.create(cam_resolution)
+        cam.set_pose(cam_placeholder.get_pose())
+        cam.set_parent(cam_placeholder)
+        
+        cam_motion = StaticCameraMotion(cam)
+        cams_motion = {"global": cam_motion}
+        tr = TaskRecorder(cams_motion, fps=20)
+        
+        task._scene.register_step_callback(tr.take_snap)
 
-        _, success = test_policy(task, task_str, var, eps, instruction)
+        obs_list, success = test_policy(task, task_str, var, eps, instruction)
 
         if task_str not in results:
             results[task_str] = []
@@ -162,12 +169,10 @@ def main(config):
         print(f"Task: {task_str}, Var: {var}, eps: {eps}, Success: {success}")
 
         if (idx + 1) % config.save_freq == 0:
-            os.makedirs(pjoin(save_dir, f"{idx}_{task_str}_{var}_{eps}"), exist_ok=True)
-            for t, obs in enumerate(video_frames):
-                plt.imsave(pjoin(save_dir, f"{idx}_{task_str}_{var}_{eps}", f"{t:04d}.png"), obs)
-            # use ffmpeg to synthesize the video
-            video_dir = pjoin(save_dir, f"{idx}_{task_str}_{var}_{eps}")
-            os.system(f"ffmpeg -framerate 5 -i {video_dir}/%04d.png -c:v libx264 -pix_fmt yuv420p {video_dir}/video.mp4") 
+            os.makedirs(pjoin(save_dir, f"{idx}_{task_str}_{var}_{eps}_{success}"), exist_ok=True)
+            tr.save(pjoin(save_dir, f"{idx}_{task_str}_{var}_{eps}_{success}"))
+            
+            tr._snaps = {cam_name: [] for cam_name in tr._cams_motion.keys()}
 
     # print the results
     for task_str, successes in results.items():
