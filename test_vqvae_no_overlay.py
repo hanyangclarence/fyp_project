@@ -7,6 +7,7 @@ import os
 import torch
 import numpy as np
 from tqdm import tqdm
+import random
 
 from pyrep.objects.dummy import Dummy
 from pyrep.objects.vision_sensor import VisionSensor
@@ -99,6 +100,7 @@ if __name__ == '__main__':
     pose_recon_losses = []
     gripper_classification_losses = []
     all_rewards = {}
+    random.shuffle(dataset.all_demos_ids)
     for i in range(len(dataset)):
         batch = dataset[i]
         gt_traj = batch["trajectory"]  # (T, D)
@@ -164,14 +166,14 @@ if __name__ == '__main__':
                 # setup video recorder
                 # Add a global camera to the scene
                 cam_placeholder = Dummy('cam_cinematic_placeholder')
-                cam_resolution = [240, 240]
+                cam_resolution = [480, 480]
                 cam = VisionSensor.create(cam_resolution)
                 cam.set_pose(cam_placeholder.get_pose())
                 cam.set_parent(cam_placeholder)
 
                 cam_motion = CircleCameraMotion(cam, Dummy('cam_cinematic_base'), 0.01)
                 cams_motion = {"global": cam_motion}
-                tr = TaskRecorder(cams_motion, fps=20)
+                tr = TaskRecorder(cams_motion, fps=40)
 
                 task._scene.register_step_callback(tr.take_snap)
             else:
